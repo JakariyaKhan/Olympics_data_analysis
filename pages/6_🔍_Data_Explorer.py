@@ -90,9 +90,10 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # Visualizations on the filtered cohort
 if cohort_records > 0:
-    st.subheader("📈 Cohort Quick Visual Diagnostics")
-    v_col1, v_col2 = st.columns(2)
+    st.subheader("📈 Cohort Visual Diagnostics")
     
+    # Row 1: Delegations & Age Distribution
+    v_col1, v_col2 = st.columns(2)
     with v_col1:
         top_cohort_nations = filtered.groupby('Region')['Name'].nunique().nlargest(10).reset_index()
         fig_c_nat = px.bar(
@@ -121,6 +122,39 @@ if cohort_records > 0:
             fig_c_age.update_layout(height=350, margin=dict(l=20, r=20, t=40, b=20))
             st.plotly_chart(fig_c_age, use_container_width=True)
 
+    # Row 2: NEW PLOTS - Top Sports & Participation Trend
+    st.markdown("<br>", unsafe_allow_html=True)
+    v_col3, v_col4 = st.columns(2)
+    
+    with v_col3:
+        top_c_sports = filtered.groupby('Sport')['Name'].count().nlargest(10).reset_index(name='Entries')
+        fig_c_sp = px.bar(
+            top_c_sports,
+            x="Entries",
+            y="Sport",
+            orientation='h',
+            title="Top 10 Contested Sports in Cohort",
+            labels={"Entries": "Athlete Entries", "Sport": "Sport"},
+            color="Entries",
+            color_continuous_scale="Viridis"
+        )
+        fig_c_sp.update_layout(yaxis=dict(autorange="reversed"), height=350, margin=dict(l=20, r=20, t=40, b=20))
+        st.plotly_chart(fig_c_sp, use_container_width=True)
+
+    with v_col4:
+        cohort_yearly = filtered.groupby('Year')['Name'].nunique().reset_index(name='Athletes')
+        fig_c_trend = px.line(
+            cohort_yearly,
+            x="Year",
+            y="Athletes",
+            markers=True,
+            title="Cohort Athlete Participation Trend Over Time",
+            labels={"Athletes": "Unique Athletes", "Year": "Olympic Year"}
+        )
+        fig_c_trend.update_traces(line_color="#10b981", line_width=2.5)
+        fig_c_trend.update_layout(height=350, margin=dict(l=20, r=20, t=40, b=20))
+        st.plotly_chart(fig_c_trend, use_container_width=True)
+
     # Data Table View & CSV Export
     st.markdown("---")
     st.subheader("📋 Granular Data Records")
@@ -131,7 +165,6 @@ if cohort_records > 0:
     with t_c1:
         row_limit = st.slider("Maximum rows to render in browser:", min_value=25, max_value=500, value=100, step=25)
     with t_c2:
-        # CSV Export
         csv_data = filtered[cols_to_show].to_csv(index=False).encode('utf-8')
         st.download_button(
             label="📥 Download Filtered Data (CSV)",

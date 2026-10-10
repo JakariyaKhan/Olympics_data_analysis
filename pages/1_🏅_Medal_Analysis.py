@@ -1,7 +1,7 @@
 """
 Olympics Medal Analysis Module
 Provides comprehensive medal tables, deduplication comparison, decade heatmaps,
-and concentration index metrics.
+podium quality scatter plots, gold conversion rates, and cumulative historical growth curves.
 """
 
 import streamlit as st
@@ -20,7 +20,7 @@ df = dl.load_olympic_data()
 
 ui.render_hero_banner(
     title="🏅 Olympic Medal Dynamics & Aggregation Engine",
-    subtitle="Evaluate official country medal rankings, measure the mathematical impact of team-event deduplication, and track medal concentration over 130 years.",
+    subtitle="Evaluate official country medal rankings, measure the mathematical impact of team-event deduplication, analyze podium quality vs quantity, and track medal concentration over 130 years.",
     badge="Module 1: Medal Intelligence"
 )
 
@@ -68,7 +68,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 col_table, col_chart = st.columns([1, 1])
 
 with col_table:
-    st.subheader(f"📋 Leaderboard: Top {top_n} Nations ({year_opt} - {season_opt})")
+    st.subheader(f"🏆 Leaderboard: Top {top_n} Nations ({year_opt} - {season_opt})")
     display_tally = tally.head(top_n).copy()
     st.dataframe(
         display_tally,
@@ -153,7 +153,82 @@ ui.render_insight_card(
     text="In datasets where each row represents an athlete participation, summing medal rows causes countries with high participation in large team sports (e.g. Football, Basketball, Ice Hockey, Rowing 8s) to have their medal totals inflated by 60% to 120%. A production Data Analyst must always verify the grain of the fact table and apply event-level grouping keys before computing official tallies."
 )
 
-# 3. Decade-by-Decade Dominance Heatmap
+# 3. Podium Efficiency & Conversion Rates (NEW PLOTS)
+st.markdown("---")
+st.subheader("🎯 Podium Quality vs. Quantity & Conversion Efficiency")
+
+col_q1, col_q2 = st.columns(2)
+
+with col_q1:
+    scatter_data = tally.head(30).copy()
+    scatter_data['Gold_Share_%'] = np.round((scatter_data['Gold'] / scatter_data['Total']) * 100, 1)
+    fig_scatter = px.scatter(
+        scatter_data,
+        x="Total",
+        y="Points",
+        size="Gold",
+        color="Gold_Share_%",
+        hover_name="Region",
+        hover_data=["Gold", "Silver", "Bronze", "Total", "Points"],
+        text="Region",
+        title="Medal Points (Weighted 3-2-1) vs. Total Medals (Top 30 Nations)",
+        labels={"Total": "Total Medals", "Points": "Weighted Medal Points", "Gold_Share_%": "Gold Share %"},
+        color_continuous_scale="Viridis"
+    )
+    fig_scatter.update_traces(textposition='top center')
+    fig_scatter.update_layout(height=450, margin=dict(l=20, r=20, t=40, b=20))
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+with col_q2:
+    gold_conv = tally[tally['Total'] >= 15].copy()
+    gold_conv['Gold_Rate_%'] = np.round((gold_conv['Gold'] / gold_conv['Total']) * 100, 1)
+    gold_conv_top = gold_conv.sort_values(by='Gold_Rate_%', ascending=False).head(15)
+    
+    fig_gold_rate = px.bar(
+        gold_conv_top,
+        x="Gold_Rate_%",
+        y="Region",
+        orientation='h',
+        color="Gold_Rate_%",
+        color_continuous_scale="YlOrBr",
+        title="Highest Gold Medal Conversion Rates (% of Medals That Are Gold)",
+        labels={"Gold_Rate_%": "Gold % of Total Medals", "Region": "Nation"},
+        text="Gold_Rate_%"
+    )
+    fig_gold_rate.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+    fig_gold_rate.update_layout(yaxis=dict(autorange="reversed"), height=450, margin=dict(l=20, r=20, t=40, b=20))
+    st.plotly_chart(fig_gold_rate, use_container_width=True)
+
+# 4. All-Time Cumulative Growth Curve of Top 5 Nations (NEW PLOT)
+st.markdown("---")
+st.subheader("📈 All-Time Cumulative Medal Growth Trajectory (Top 5 Nations)")
+st.markdown("Observe the relentless historical accumulation of Olympic medals across 130 years:")
+
+cum_yearly, top_regs = dl.get_cumulative_medals_top_n(df, top_n=5, season=season_opt, deduplicate=dedup_opt)
+fig_cum = go.Figure()
+palette = ['#2563eb', '#dc2626', '#eab308', '#10b981', '#8b5cf6']
+
+for i, reg in enumerate(top_regs):
+    if reg in cum_yearly.columns:
+        fig_cum.add_trace(go.Scatter(
+            x=cum_yearly['Year'],
+            y=cum_yearly[reg],
+            mode='lines+markers',
+            name=reg,
+            line=dict(width=2.5, color=palette[i % len(palette)])
+        ))
+
+fig_cum.update_layout(
+    title=f"Cumulative Official Medals Won Over Time ({season_opt} Games)",
+    xaxis_title="Olympic Year",
+    yaxis_title="Cumulative Medals",
+    height=450,
+    margin=dict(l=20, r=20, t=40, b=20),
+    hovermode="x unified"
+)
+st.plotly_chart(fig_cum, use_container_width=True)
+
+# 5. Decade-by-Decade Dominance Heatmap
 st.markdown("---")
 st.subheader("🔥 Decade-by-Decade Elite Nations Heatmap")
 

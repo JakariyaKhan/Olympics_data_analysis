@@ -138,7 +138,7 @@ def render_insight_card(title, text):
     """Renders a business/interviewer takeaway box."""
     st.markdown(f"""
         <div class="insight-card">
-            <div class="insight-title">💡 Analytical Finding & Interview Takeaway: {title}</div>
+            <div class="insight-title">💡 Analytical Finding: {title}</div>
             <div class="insight-text">{text}</div>
         </div>
     """, unsafe_allow_html=True)

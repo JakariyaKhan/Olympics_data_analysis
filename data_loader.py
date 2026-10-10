@@ -2,8 +2,10 @@
 Olympics Data Analytics - Data Engineering & Transformation Engine
 Handles ingestion, schema reconciliation, event-level deduplication,
 and advanced analytical aggregations for the Streamlit Analytics Platform.
+Loads directly from the cleaned merged dataset (olympics_cleaned_merged.csv).
 """
 
+import os
 import re
 import pandas as pd
 import numpy as np
@@ -84,31 +86,39 @@ def extract_first_item(val):
 def load_olympic_data():
     """
     Ingests and cleans athlete records and NOC region mappings.
+    Loads directly from olympics_cleaned_merged.csv when available,
+    with automatic fallback to all_athlete_games.csv + all_regions.csv.
     Performs schema reconciliation for 2024 & 2026 editions.
     """
-    athletes = pd.read_csv('all_athlete_games.csv', low_memory=False)
-    regions = pd.read_csv('all_regions.csv')
+    cleaned_path = 'olympics_cleaned_merged.csv'
+    if os.path.exists(cleaned_path):
+        df = pd.read_csv(cleaned_path, low_memory=False)
+    else:
+        athletes = pd.read_csv('all_athlete_games.csv', low_memory=False)
+        regions = pd.read_csv('all_regions.csv')
+        df = athletes.merge(regions, on='NOC', how='left')
 
     # Schema reconciliation for 2024 Paris & 2026 Milan
-    s_mask = athletes['Sport'].isna() & athletes['Sport Disciplines'].notna()
-    e_mask = athletes['Event'].isna() & athletes['Event List'].notna()
-    athletes.loc[s_mask, 'Sport'] = athletes.loc[s_mask, 'Sport Disciplines'].apply(extract_first_item)
-    athletes.loc[e_mask, 'Event'] = athletes.loc[e_mask, 'Event List'].apply(extract_first_item)
+    if 'Sport Disciplines' in df.columns:
+        s_mask = df['Sport'].isna() & df['Sport Disciplines'].notna()
+        if s_mask.any():
+            df.loc[s_mask, 'Sport'] = df.loc[s_mask, 'Sport Disciplines'].apply(extract_first_item)
+    if 'Event List' in df.columns:
+        e_mask = df['Event'].isna() & df['Event List'].notna()
+        if e_mask.any():
+            df.loc[e_mask, 'Event'] = df.loc[e_mask, 'Event List'].apply(extract_first_item)
 
     # 2026 Winter Games roster fallback
-    y26_mask = athletes['Year'] == 2026
-    athletes.loc[y26_mask & athletes['Sport'].isna(), 'Sport'] = 'Winter Sports (Preliminary)'
-    athletes.loc[y26_mask & athletes['Event'].isna(), 'Event'] = 'Preliminary Entry'
+    y26_mask = df['Year'] == 2026
+    df.loc[y26_mask & df['Sport'].isna(), 'Sport'] = 'Winter Sports (Preliminary)'
+    df.loc[y26_mask & df['Event'].isna(), 'Event'] = 'Preliminary Entry'
 
     # Ensure clean numeric age
-    athletes['Age'] = pd.to_numeric(athletes['Age'], errors='coerce')
+    df['Age'] = pd.to_numeric(df['Age'], errors='coerce')
 
     # Standardize Season & Year
-    athletes['Year'] = athletes['Year'].astype(int)
-    athletes['Season'] = athletes['Season'].str.strip().str.title()
-
-    # Join with region dictionary
-    df = athletes.merge(regions, on='NOC', how='left')
+    df['Year'] = df['Year'].astype(int)
+    df['Season'] = df['Season'].astype(str).str.strip().str.title()
 
     # Geopolitical and regional fallback mapping
     fallback_map = {
@@ -121,11 +131,17 @@ def load_olympic_data():
         'SGP': 'Singapore',
         'ROC': 'Russia'
     }
-    df['Region'] = df['Region'].fillna(df['NOC'].map(fallback_map)).fillna(df['Team']).fillna(df['NOC'])
+    if 'Region' not in df.columns or df['Region'].isna().any():
+        df['Region'] = df['Region'].fillna(df['NOC'].map(fallback_map)).fillna(df['Team']).fillna(df['NOC'])
 
     # Standardize Medal
-    df['Medal'] = df['Medal'].replace({'nan': np.nan})
+    df['Medal'] = df['Medal'].replace({'nan': np.nan, '': np.nan})
     df['Has_Medal'] = df['Medal'].notna()
+    df['Medal Won'] = df['Has_Medal']
+    df['Gold Medal'] = df['Medal'] == 'Gold'
+    df['Silver Medal'] = df['Medal'] == 'Silver'
+    df['Bronze Medal'] = df['Medal'] == 'Bronze'
+    df['Results Available'] = df['Sport'].notna() & df['Event'].notna()
 
     # Medal Points: 3 for Gold, 2 for Silver, 1 for Bronze
     point_map = {'Gold': 3, 'Silver': 2, 'Bronze': 1}
@@ -237,6 +253,45 @@ def get_country_yearly_stats(df, country_name, deduplicate=True):
 
     return yearly.sort_values(by=['Year', 'Season'])
 
+def get_country_gender_evolution(df, country_name):
+    """
+    Gender breakdown over time for a single country.
+    """
+    c_df = df[df['Region'] == country_name]
+    if c_df.empty:
+        c_df = df[df['NOC'] == country_name]
+    if c_df.empty:
+        return pd.DataFrame()
+
+    g = c_df.groupby(['Year', 'Season', 'Gender'])['Name'].nunique().unstack(fill_value=0).reset_index()
+    for col in ['Male', 'Female']:
+        if col not in g.columns:
+            g[col] = 0
+    g['Total'] = g['Male'] + g['Female']
+    g['Female_Pct'] = np.where(g['Total'] > 0, np.round((g['Female'] / g['Total']) * 100, 1), 0.0)
+    return g.sort_values(by=['Year', 'Season'])
+
+def get_country_summer_vs_winter(df, country_name, deduplicate=True):
+    """
+    Compares Summer vs Winter medals and athlete counts for a given country.
+    """
+    c_df = df[df['Region'] == country_name]
+    if c_df.empty:
+        c_df = df[df['NOC'] == country_name]
+    if c_df.empty:
+        return pd.DataFrame()
+
+    if deduplicate:
+        medals = get_deduplicated_medals(c_df)
+    else:
+        medals = c_df[c_df['Medal'].notna()]
+
+    m_season = medals.groupby('Season').size().reset_index(name='Medals')
+    a_season = c_df.groupby('Season')['Name'].nunique().reset_index(name='Athletes')
+    res = a_season.merge(m_season, on='Season', how='left').fillna(0)
+    res['Medals'] = res['Medals'].astype(int)
+    return res
+
 def get_host_nation_analysis(df, deduplicate=True):
     """
     Analyzes historical host nation performance lift:
@@ -248,7 +303,6 @@ def get_host_nation_analysis(df, deduplicate=True):
     else:
         medals = df[df['Medal'].notna()]
 
-    # Yearly medals per country per edition
     yearly = medals.groupby(['Year', 'Season', 'Region']).size().reset_index(name='Medals')
 
     records = []
@@ -284,7 +338,6 @@ def get_host_nation_analysis(df, deduplicate=True):
 
     summary_df = pd.DataFrame(records).sort_values(by='Lift_Pct', ascending=False)
 
-    # Perform statistical paired t-test on averages across nations
     if len(summary_df) >= 5:
         t_stat, p_val = stats.ttest_rel(summary_df['Avg_Medals_When_Host'], summary_df['Avg_Medals_Non_Host'])
     else:
@@ -336,6 +389,23 @@ def get_age_dynamics_by_sport(df, min_athletes=500):
 
     return sub, stats_df
 
+def get_athlete_age_trend(df, season='Summer'):
+    """
+    Calculates the evolution of athlete age (mean, median, IQR) over Olympic editions.
+    """
+    valid = df[df['Age'].notna()]
+    if season != 'All':
+        valid = valid[valid['Season'] == season]
+
+    trend = valid.groupby('Year')['Age'].agg(
+        Mean_Age='mean',
+        Median_Age='median',
+        Q25=lambda x: x.quantile(0.25),
+        Q75=lambda x: x.quantile(0.75),
+        Count='count'
+    ).reset_index().sort_values(by='Year')
+    return trend
+
 def get_gender_evolution(df):
     """
     Tracks female vs male participation counts and percentage share across all Olympic editions.
@@ -355,7 +425,7 @@ def get_gender_evolution(df):
 def get_sport_specialization(df, min_medals=15, deduplicate=True):
     """
     Identifies which countries dominate specific sports.
-    Computes country medal share for each sport and the sport's Herfindahl-Hirschman Index (HHI).
+    Computes country medal share for each sport.
     """
     if deduplicate:
         medals = get_deduplicated_medals(df)
@@ -364,20 +434,106 @@ def get_sport_specialization(df, min_medals=15, deduplicate=True):
 
     medals = medals[medals['Sport'].notna()]
 
-    # Sport totals
     sport_totals = medals.groupby('Sport').size().reset_index(name='Sport_Total_Medals')
     sport_totals = sport_totals[sport_totals['Sport_Total_Medals'] >= min_medals]
 
-    # Country-Sport totals
     cs = medals.groupby(['Sport', 'Region']).size().reset_index(name='Medals')
     cs = cs.merge(sport_totals, on='Sport', how='inner')
     cs['Share_Pct'] = np.round((cs['Medals'] / cs['Sport_Total_Medals']) * 100, 2)
 
-    # Top dominant country per sport
     top_dominant = cs.sort_values(by=['Sport', 'Share_Pct'], ascending=[True, False]).groupby('Sport').first().reset_index()
     top_dominant = top_dominant.sort_values(by='Share_Pct', ascending=False)
 
     return top_dominant, cs
+
+def get_sport_competitiveness_hhi(df, min_medals=25, deduplicate=True):
+    """
+    Computes Herfindahl-Hirschman Index (HHI) for Olympic sports.
+    HHI measures medal concentration across nations:
+    Higher HHI = Monopoly / Oligopoly dominance.
+    Lower HHI = Highly competitive / diverse medal distribution.
+    """
+    if deduplicate:
+        medals = get_deduplicated_medals(df)
+    else:
+        medals = df[df['Medal'].notna()]
+
+    medals = medals[medals['Sport'].notna()]
+    sport_counts = medals.groupby('Sport').size().reset_index(name='Total_Medals')
+    sport_counts = sport_counts[sport_counts['Total_Medals'] >= min_medals]
+
+    cs = medals.groupby(['Sport', 'Region']).size().reset_index(name='Medals')
+    cs = cs.merge(sport_counts, on='Sport', how='inner')
+    cs['Share'] = (cs['Medals'] / cs['Total_Medals']) * 100
+    cs['Share_Sq'] = cs['Share'] ** 2
+
+    hhi_df = cs.groupby('Sport').agg(
+        HHI=('Share_Sq', 'sum'),
+        Total_Medals=('Total_Medals', 'first'),
+        Winning_Nations=('Region', 'nunique')
+    ).reset_index()
+
+    hhi_df['HHI'] = np.round(hhi_df['HHI'], 1)
+    return hhi_df.sort_values(by='HHI', ascending=False)
+
+def get_cumulative_medals_top_n(df, top_n=5, season='All', deduplicate=True):
+    """
+    Computes all-time cumulative medal trajectories for top N nations.
+    """
+    filtered = df if season == 'All' else df[df['Season'] == season]
+    tally = get_medal_tally(filtered, season=season, deduplicate=deduplicate)
+    top_regions = tally['Region'].head(top_n).tolist()
+
+    if deduplicate:
+        medals = get_deduplicated_medals(filtered)
+    else:
+        medals = filtered[filtered['Medal'].notna()]
+
+    sub = medals[medals['Region'].isin(top_regions)]
+    yearly = sub.groupby(['Year', 'Region']).size().unstack(fill_value=0)
+    
+    # Reindex across all Olympic years
+    all_years = sorted(filtered['Year'].unique())
+    yearly = yearly.reindex(all_years, fill_value=0).cumsum().reset_index()
+    return yearly, top_regions
+
+def get_cold_war_rivalry_stats(df, deduplicate=True):
+    """
+    Tracks medal performance during the peak Cold War era (1952 – 1988 Summer Games)
+    between USA, Soviet Union (URS/Russia), East Germany (GDR), and West Germany (FRG).
+    """
+    cw_years = [1952, 1956, 1960, 1964, 1968, 1972, 1976, 1980, 1984, 1988]
+    sub = df[(df['Season'] == 'Summer') & (df['Year'].isin(cw_years))]
+
+    if deduplicate:
+        medals = get_deduplicated_medals(sub)
+    else:
+        medals = sub[sub['Medal'].notna()]
+
+    # Normalize Cold War superpowers
+    cw_map = {
+        'USA': 'United States',
+        'URS': 'Soviet Union',
+        'RUS': 'Soviet Union',
+        'GDR': 'East Germany',
+        'FRG': 'West Germany',
+        'GER': 'Germany'
+    }
+    medals = medals.copy()
+    medals['Cold_War_Power'] = medals['NOC'].map(cw_map)
+    medals = medals[medals['Cold_War_Power'].notna()]
+
+    res = medals.groupby(['Year', 'Cold_War_Power']).size().unstack(fill_value=0).reset_index()
+    return res
+
+def get_debut_nations_by_decade(df):
+    """
+    Tracks how many nations made their historical Olympic debut in each decade.
+    """
+    first_year = df.groupby('Region')['Year'].min().reset_index()
+    first_year['Decade'] = (first_year['Year'] // 10 * 10).astype(str) + 's'
+    debut_counts = first_year.groupby('Decade').size().reset_index(name='New_Nations_Count')
+    return debut_counts.sort_values(by='Decade')
 
 def get_top_olympians(df, top_n=25):
     """
@@ -393,7 +549,6 @@ def get_top_olympians(df, top_n=25):
     tally['Total'] = tally['Gold'] + tally['Silver'] + tally['Bronze']
     tally['Points'] = tally['Gold'] * 3 + tally['Silver'] * 2 + tally['Bronze'] * 1
 
-    # Get years active
     years_active = medals.groupby('Name')['Year'].agg(
         First_Year='min',
         Last_Year='max',

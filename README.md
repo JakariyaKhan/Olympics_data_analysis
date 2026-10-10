@@ -42,22 +42,25 @@ Olympics_data_analysis/
 ├── data_loader.py                   # Data ingestion, schema reconciliation, deduplication & statistics
 ├── ui_utils.py                      # Reusable modern UI styling and CSS components
 ├── requirements.txt                 # Project dependencies
-├── all_athlete_games.csv            # Fact dataset (300,266 records, 1896–2026)
+├── olympics_cleaned_merged.csv      # Cleaned & consolidated fact dataset (300,266 records, 1896–2026)
+├── all_athlete_games.csv            # Original raw fact dataset
 ├── all_regions.csv                  # NOC to Region mapping dictionary
 │
 └── pages/
-    ├── 1_🏅_Medal_Analysis.py       # Official tallies, deduplication comparison, decade heatmaps
-    ├── 2_🌍_Country_Analysis.py     # Trajectories, host lift t-test, conversion efficiency, head-to-head
-    ├── 3_🏃_Athlete_Analysis.py     # Age-peak biological curves, longevity, and career lookup
-    ├── 4_🎯_Sport_Analysis.py       # Monopolies, treemap hierarchies, event inflation
-    ├── 5_📈_Historical_Trends.py    # Gender parity evolution, Cold War boycotts, global growth
-    └── 6_🔍_Data_Explorer.py        # Self-serve multi-dimensional BI sandbox with CSV export
+    ├── 1_🏅_Medal_Analysis.py       # Official tallies, deduplication comparison, decade heatmaps, points efficiency
+    ├── 2_🌍_Country_Analysis.py     # Trajectories, host lift t-test, conversion efficiency, gender evolution, head-to-head
+    ├── 3_🏃_Athlete_Analysis.py     # Age-peak curves, 130-year trends, medal pyramid, longevity, career timelines
+    ├── 4_🎯_Sport_Analysis.py       # Monopolies, HHI market concentration, treemap hierarchies, gender parity by sport
+    ├── 5_📈_Historical_Trends.py    # Gender parity evolution, Cold War rivalry, boycotts, debut expansion waves
+    └── 6_🔍_Data_Explorer.py        # Self-serve multi-dimensional BI sandbox with cohort visuals and CSV export
 ```
 
 ---
 
 ## 🛠️ Data Engineering & ETL Pipeline
 
+* **Optimized Fact Table Ingestion:**
+  - Standardized pipeline to ingest `olympics_cleaned_merged.csv`, featuring pre-consolidated region joins, validated medal indicator flags, and schema-reconciled 2024–2026 data.
 * **Schema Reconciliation for 2024 & 2026:**
   - The 2024 Paris edition stored `Sport` and `Event` as stringified Python lists within `Sport Disciplines` and `Event List`.
   - Built a regex-driven extraction parser that unwrapped list literals into canonical event strings.

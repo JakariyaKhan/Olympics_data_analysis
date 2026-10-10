@@ -38,9 +38,9 @@ with c_col2:
 c_yearly = dl.get_country_yearly_stats(df, selected_country, deduplicate=dedup_country)
 
 if c_yearly.empty:
-    st.warning(f"No Olympic participation records found for '{selected_country}'.")
+    st.warning(f"No historical records found for {selected_country}.")
 else:
-    # Summary KPIs
+    # High-level metrics ribbon
     tot_medals = c_yearly['Total_Medals'].sum()
     tot_gold = c_yearly['Gold'].sum()
     tot_silver = c_yearly['Silver'].sum()
@@ -48,21 +48,21 @@ else:
     tot_athletes = c_yearly['Athletes_Sent'].sum()
     overall_eff = round((tot_medals / tot_athletes * 100), 2) if tot_athletes > 0 else 0
     host_editions = c_yearly[c_yearly['Hosted'] == True]
-    best_year_row = c_yearly.loc[c_yearly['Total_Medals'].idxmax()] if not c_yearly.empty and tot_medals > 0 else None
 
-    kp1, kp2, kp3, kp4, kp5 = st.columns(5)
-    kp1.metric("All-Time Medals", f"{tot_medals:,}", f"🥇 {tot_gold} | 🥈 {tot_silver} | 🥉 {tot_bronze}")
-    kp2.metric("Delegation Appearances", f"{tot_athletes:,} athletes")
-    kp3.metric("Medal Conversion Rate", f"{overall_eff}%", help="Total Medals won divided by total athlete entries sent")
-    kp4.metric("Best Olympic Edition", f"{best_year_row['Year']} ({best_year_row['Total_Medals']} medals)" if best_year_row is not None else "N/A")
-    kp5.metric("Times Hosted", f"{len(host_editions)} Games")
+    m1, m2, m3, m4, m5, m6 = st.columns(6)
+    m1.metric("Total Medals", f"{tot_medals:,}")
+    m2.metric("🥇 Gold Medals", f"{tot_gold:,}")
+    m3.metric("🥈 Silver Medals", f"{tot_silver:,}")
+    m4.metric("🥉 Bronze Medals", f"{tot_bronze:,}")
+    m5.metric("Games Hosted", f"{len(host_editions)} Editions")
+    m6.metric("Conversion Rate", f"{overall_eff}%", help="Total Medals won divided by total athlete participations")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Tabs for structured deep dive
+    # Tabs
     tab_traj, tab_sports, tab_host, tab_compare = st.tabs([
-        "📈 Historical Trajectory",
-        "🥋 Sport Specialization",
+        "📈 Historical Trajectory & Delegations",
+        "🎯 Sport Specialization & Seasonal Split",
         "🏠 Host Country Advantage (Hypothesis Testing)",
         "⚔️ Head-to-Head Comparison"
     ])
@@ -97,13 +97,13 @@ else:
             title=f"Medal Progression Over Time (Red Stars = Games Hosted by {selected_country})",
             xaxis_title="Olympic Year",
             yaxis_title="Official Medals Won",
-            height=450,
+            height=430,
             margin=dict(l=20, r=20, t=40, b=20),
             hovermode="x unified"
         )
         st.plotly_chart(fig_traj, use_container_width=True)
 
-        # Efficiency & Delegation Size
+        # Row: Delegation Size & Conversion Rate
         c1_sub, c2_sub = st.columns(2)
         with c1_sub:
             fig_ath = px.bar(
@@ -130,9 +130,41 @@ else:
             fig_eff.update_layout(height=350, margin=dict(l=20, r=20, t=40, b=20))
             st.plotly_chart(fig_eff, use_container_width=True)
 
+        # NEW PLOTS: Gender Participation Breakdown & Delegation vs Medal Correlation
+        st.markdown("<br>", unsafe_allow_html=True)
+        c3_sub, c4_sub = st.columns(2)
+        with c3_sub:
+            c_gender = dl.get_country_gender_evolution(df, selected_country)
+            if not c_gender.empty:
+                fig_c_gen = px.bar(
+                    c_gender,
+                    x="Year",
+                    y=["Male", "Female"],
+                    title=f"Gender Delegation Composition: {selected_country}",
+                    labels={"value": "Athletes Count", "Year": "Olympic Year"},
+                    color_discrete_map={"Male": "#3b82f6", "Female": "#ec4899"},
+                    barmode="stack"
+                )
+                fig_c_gen.update_layout(height=360, legend_title="", margin=dict(l=20, r=20, t=40, b=20))
+                st.plotly_chart(fig_c_gen, use_container_width=True)
+
+        with c4_sub:
+            fig_corr = px.scatter(
+                c_yearly,
+                x="Athletes_Sent",
+                y="Total_Medals",
+                trendline="ols",
+                title=f"Delegation Size vs. Medal Count Correlation ({selected_country})",
+                labels={"Athletes_Sent": "Athletes Sent", "Total_Medals": "Total Medals Won"},
+                hover_data=["Year", "Season"]
+            )
+            fig_corr.update_traces(marker=dict(size=9, color="#2563eb"))
+            fig_corr.update_layout(height=360, margin=dict(l=20, r=20, t=40, b=20))
+            st.plotly_chart(fig_corr, use_container_width=True)
+
     # TAB 2: Sport Specialization
     with tab_sports:
-        st.subheader(f"Top Medal-Producing Sports for {selected_country}")
+        st.subheader(f"Top Medal-Producing Sports & Seasonal Split: {selected_country}")
         c_df = df[df['Region'] == selected_country]
         if dedup_country:
             c_medals = dl.get_deduplicated_medals(c_df)
@@ -149,16 +181,34 @@ else:
             sport_tally['Total'] = sport_tally['Gold'] + sport_tally['Silver'] + sport_tally['Bronze']
             sport_tally = sport_tally.sort_values(by='Total', ascending=False).head(15)
 
-            fig_sp = px.bar(
-                sport_tally,
-                x="Total",
-                y="Sport",
-                orientation='h',
-                color_discrete_sequence=['#3b82f6'],
-                title=f"Top 15 Sports by Total Medals Won ({selected_country})"
-            )
-            fig_sp.update_layout(yaxis=dict(autorange="reversed"), height=480, margin=dict(l=20, r=20, t=40, b=20))
-            st.plotly_chart(fig_sp, use_container_width=True)
+            col_sp1, col_sp2 = st.columns([3, 2])
+            with col_sp1:
+                fig_sp = px.bar(
+                    sport_tally,
+                    x="Total",
+                    y="Sport",
+                    orientation='h',
+                    color_discrete_sequence=['#3b82f6'],
+                    title=f"Top 15 Sports by Total Medals Won ({selected_country})"
+                )
+                fig_sp.update_layout(yaxis=dict(autorange="reversed"), height=460, margin=dict(l=20, r=20, t=40, b=20))
+                st.plotly_chart(fig_sp, use_container_width=True)
+
+            with col_sp2:
+                # NEW PLOT: Summer vs Winter medals for this country
+                sw_stat = dl.get_country_summer_vs_winter(df, selected_country, deduplicate=dedup_country)
+                fig_sw_donut = px.pie(
+                    sw_stat,
+                    names="Season",
+                    values="Medals",
+                    hole=0.5,
+                    title=f"Summer vs. Winter Medals ({selected_country})",
+                    color="Season",
+                    color_discrete_map={"Summer": "#f59e0b", "Winter": "#0ea5e9"}
+                )
+                fig_sw_donut.update_traces(textposition='inside', textinfo='percent+label+value')
+                fig_sw_donut.update_layout(height=460, margin=dict(l=20, r=20, t=40, b=20))
+                st.plotly_chart(fig_sw_donut, use_container_width=True)
 
     # TAB 3: Host Country Advantage (Hypothesis Testing)
     with tab_host:
@@ -228,5 +278,29 @@ else:
             title=f"All-Time Olympic Medal Trajectory: {selected_country} vs {comp_country}",
             markers=True
         )
-        fig_head.update_layout(height=420, margin=dict(l=20, r=20, t=40, b=20))
+        fig_head.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=20))
         st.plotly_chart(fig_head, use_container_width=True)
+
+        # NEW PLOT: Head-to-Head Sport comparison
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"#### 🥊 Sport-by-Sport Direct Medal Comparison: {selected_country} vs {comp_country}")
+        
+        c1_m = dl.get_deduplicated_medals(df[df['Region'] == selected_country]).groupby('Sport').size().reset_index(name=selected_country)
+        c2_m = dl.get_deduplicated_medals(df[df['Region'] == comp_country]).groupby('Sport').size().reset_index(name=comp_country)
+        sport_comp = pd.merge(c1_m, c2_m, on='Sport', how='outer').fillna(0)
+        sport_comp['Total_Combined'] = sport_comp[selected_country] + sport_comp[comp_country]
+        top_contested = sport_comp.sort_values(by='Total_Combined', ascending=False).head(12)
+        
+        top_contested_melt = top_contested.melt(id_vars='Sport', value_vars=[selected_country, comp_country], var_name='Country', value_name='Medals')
+        fig_sport_comp = px.bar(
+            top_contested_melt,
+            x="Medals",
+            y="Sport",
+            color="Country",
+            barmode="group",
+            orientation='h',
+            title=f"Top Contested Sports: {selected_country} vs {comp_country}",
+            color_discrete_sequence=['#2563eb', '#ef4444']
+        )
+        fig_sport_comp.update_layout(yaxis=dict(autorange="reversed"), height=420, margin=dict(l=20, r=20, t=40, b=20))
+        st.plotly_chart(fig_sport_comp, use_container_width=True)
