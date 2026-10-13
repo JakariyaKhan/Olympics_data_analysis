@@ -327,13 +327,14 @@ with tab_legends:
             # Career Timeline Plot
             timeline_ind = rec_ind.copy()
             timeline_ind['Medal_Status'] = timeline_ind['Medal'].fillna('Participation (Non-Medal)')
+            timeline_ind['Point_Size'] = 14
             
             fig_ind_time = px.scatter(
                 timeline_ind,
                 x="Year",
                 y="Event",
                 color="Medal_Status",
-                size=[14]*len(timeline_ind),
+                size="Point_Size",
                 hover_data=["City", "Season", "Sport"],
                 title=f"Olympic Event Timeline: {chosen_ind_ath}",
                 color_discrete_map={

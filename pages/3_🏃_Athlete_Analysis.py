@@ -293,13 +293,14 @@ with tab_lookup:
             
             timeline_df = ath_records.copy()
             timeline_df['Medal_Display'] = timeline_df['Medal'].fillna('Participant (No Medal)')
+            timeline_df['Point_Size'] = 14
             
             fig_timeline = px.scatter(
                 timeline_df,
                 x="Year",
                 y="Event",
                 color="Medal_Display",
-                size=[14]*len(timeline_df),
+                size="Point_Size",
                 hover_data=["City", "Season", "Sport"],
                 title=f"Career Event Timeline for {chosen_athlete}",
                 color_discrete_map={

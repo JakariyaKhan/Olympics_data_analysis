@@ -196,20 +196,22 @@ with tab_evolution:
         sport_gender = sport_gender[sport_gender['Total'] >= 200]
         sport_gender['Female_Share_%'] = np.round((sport_gender['Female'] / sport_gender['Total']) * 100, 1)
         sport_gender_sorted = sport_gender.sort_values(by='Female_Share_%', ascending=False)
-
-        fig_sp_gen = px.bar(
-            sport_gender_sorted.head(20),
-            x="Female_Share_%",
-            y="Sport",
-            orientation='h',
-            color="Female_Share_%",
-            color_continuous_scale="Purples",
-            title="Top Sports by Female Athlete Share (2000 – 2024, Min 200 Athletes)",
-            labels={"Female_Share_%": "Female Athlete Share (%)", "Sport": "Sport"}
-        )
-        fig_sp_gen.add_vline(x=50, line_dash="dash", line_color="#ef4444", annotation_text="50% Parity")
-        fig_sp_gen.update_layout(yaxis=dict(autorange="reversed"), height=460, margin=dict(l=20, r=20, t=40, b=20))
-        st.plotly_chart(fig_sp_gen, use_container_width=True)
+        if not sport_gender_sorted.empty:
+            fig_sp_gen = px.bar(
+                sport_gender_sorted.head(20),
+                x="Female_Share_%",
+                y="Sport",
+                orientation='h',
+                color="Female_Share_%",
+                color_continuous_scale="Purples",
+                title="Top Sports by Female Athlete Share (2000 – 2024, Min 200 Athletes)",
+                labels={"Female_Share_%": "Female Athlete Share (%)", "Sport": "Sport"}
+            )
+            fig_sp_gen.add_vline(x=50, line_dash="dash", line_color="#ef4444", annotation_text="50% Parity")
+            fig_sp_gen.update_layout(yaxis=dict(autorange="reversed"), height=460, margin=dict(l=20, r=20, t=40, b=20))
+            st.plotly_chart(fig_sp_gen, use_container_width=True)
+        else:
+            st.info("Insufficient sport gender data with >= 200 athletes.")
 
 # TAB 4: Deep Dive
 with tab_deepdive:

@@ -236,13 +236,17 @@ top_alltime_regions = tally_dedup['Region'].head(12).tolist()
 dedup_all = dl.get_deduplicated_medals(df[df['Season'] == season_opt] if season_opt != "All" else df)
 decade_tally = dedup_all[dedup_all['Region'].isin(top_alltime_regions)].groupby(['Region', 'Decade']).size().unstack(fill_value=0)
 
-fig_heat = px.imshow(
-    decade_tally,
-    labels=dict(x="Olympic Decade", y="Nation", color="Official Medals"),
-    x=decade_tally.columns,
-    y=decade_tally.index,
-    color_continuous_scale="YlOrRd",
-    title="Official Medals Won by Top Nations Across Decades"
-)
-fig_heat.update_layout(height=460, margin=dict(l=20, r=20, t=40, b=20))
-st.plotly_chart(fig_heat, use_container_width=True)
+if not decade_tally.empty and decade_tally.shape[1] > 0:
+    fig_heat = px.imshow(
+        decade_tally,
+        labels=dict(x="Olympic Decade", y="Nation", color="Official Medals"),
+        x=decade_tally.columns,
+        y=decade_tally.index,
+        color_continuous_scale="YlOrRd",
+        title="Official Medals Won by Top Nations Across Decades"
+    )
+    fig_heat.update_layout(height=460, margin=dict(l=20, r=20, t=40, b=20))
+    st.plotly_chart(fig_heat, use_container_width=True)
+else:
+    st.info("No decade dominance data available for the chosen criteria.")
+
