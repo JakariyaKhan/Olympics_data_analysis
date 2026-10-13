@@ -1,8 +1,10 @@
 # 🏅 Olympics Historical & Performance Analytics (1896 – 2026)
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](http://localhost:8501)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://jakariyakhan-olympics-data-analysis-app-1pj7yu.streamlit.app/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> 🌐 **Live Deployed Dashboard:** [jakariyakhan-olympics-data-analysis-app-1pj7yu.streamlit.app](https://jakariyakhan-olympics-data-analysis-app-1pj7yu.streamlit.app/)
 
 An enterprise-grade exploratory data analysis platform bridging **data engineering**, **statistical hypothesis testing**, and **business intelligence** to extract actionable insights from over **300,000 Olympic records** across 130 years of competition.
 
@@ -52,7 +54,8 @@ Olympics_data_analysis/
     ├── 3_🏃_Athlete_Analysis.py     # Age-peak curves, 130-year trends, medal pyramid, longevity, career timelines
     ├── 4_🎯_Sport_Analysis.py       # Monopolies, HHI market concentration, treemap hierarchies, gender parity by sport
     ├── 5_📈_Historical_Trends.py    # Gender parity evolution, Cold War rivalry, boycotts, debut expansion waves
-    └── 6_🔍_Data_Explorer.py        # Self-serve multi-dimensional BI sandbox with cohort visuals and CSV export
+    ├── 6_🔍_Data_Explorer.py        # Self-serve multi-dimensional BI sandbox with cohort visuals and CSV export
+    └── 7_🇮🇳_India_at_Olympics.py    # 125+ years records, Hockey dynasty, modern resurgence, Athlete Hall of Fame
 ```
 
 ---
