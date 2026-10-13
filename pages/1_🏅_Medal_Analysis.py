@@ -24,8 +24,8 @@ ui.render_hero_banner(
     badge="Module 1: Medal Intelligence"
 )
 
-# Filters Row
-st.subheader("⚙️ Filter Parameters")
+# Filters Row⚙️ Filter 
+st.subheader("Parameters")
 f_col1, f_col2, f_col3, f_col4 = st.columns(4)
 
 with f_col1:
