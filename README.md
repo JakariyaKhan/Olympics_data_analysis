@@ -97,9 +97,6 @@ streamlit run app.py
 The application will launch automatically in your browser at `http://localhost:8501`.
 
 ```
-
----
-
 ## 🧑‍💻 Author
 
 **Jakariya Khan**  
@@ -108,3 +105,4 @@ B.Tech in Computer Science (AI-ML), Dr. APJ Abdul Kalam Technical University
 - **Email:** jakariya012006@gmail.com  
 - **GitHub:** [JakariyaKhan](https://github.com/JakariyaKhan)
 - **LinkedIn:** [JakariyaKhan](https://www.linkedin.com/in/jakariyakhan)
+```
