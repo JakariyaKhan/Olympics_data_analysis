@@ -96,22 +96,6 @@ streamlit run app.py
 ```
 The application will launch automatically in your browser at `http://localhost:8501`.
 
----
-
-## 💼 Resume Bullets (Google XYZ Format)
-
-Use these bullet points directly on your resume under **Projects**:
-
-```markdown
-Olympic Games Historical & Performance Analytics Platform | Python, Streamlit, Plotly, SciPy, SQL
-• Engineered an end-to-end analytics platform analyzing 300,000+ Olympic records (1896–2026), 
-  building automated ETL pipelines to resolve schema drift and eliminate team-event medal duplication.
-• Formulated custom KPI frameworks including Delegation Medal Conversion Rate and Host Nation Lift Metric, 
-  empirically validating home-turf advantage via paired two-sample t-test (t = 5.42, p < 0.0001).
-• Architected a 6-page interactive Streamlit dashboard featuring choropleth maps, radar charts, 
-  and dynamic sunburst hierarchies for multi-dimensional sport and demographic exploration.
-• Optimized data processing using Pandas vectorization and Streamlit caching (@st.cache_data), 
-  reducing dashboard load time by over 65%.
 ```
 
 ---
