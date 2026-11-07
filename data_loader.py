@@ -170,16 +170,21 @@ def load_olympic_data():
 
     return df
 
+def get_medal_records(df):
+    """Return medal-bearing result rows, excluding preliminary roster-only records."""
+    eligible = df
+    if 'Is_Preliminary_Entry' in eligible.columns:
+        eligible = eligible[~eligible['Is_Preliminary_Entry']]
+    return eligible[eligible['Medal'].notna()]
+
+
 def get_deduplicated_medals(df):
     """
     Deduplicates team medals.
     In team events (e.g. Basketball, Football, Relay), multiple teammates winning medals
     are counted as ONE medal for the country's official medal tally.
     """
-    eligible = df
-    if 'Is_Preliminary_Entry' in eligible.columns:
-        eligible = eligible[~eligible['Is_Preliminary_Entry']]
-    medals_only = eligible[eligible['Medal'].notna()]
+    medals_only = get_medal_records(df)
     dedup = medals_only.drop_duplicates(
         subset=['Year', 'Season', 'City', 'Sport', 'Event', 'Medal', 'NOC']
     )
@@ -198,9 +203,7 @@ def get_medal_tally(df, year='All-Time', season='All', deduplicate=True):
     if deduplicate:
         medals_data = get_deduplicated_medals(filtered)
     else:
-        if 'Is_Preliminary_Entry' in filtered.columns:
-            filtered = filtered[~filtered['Is_Preliminary_Entry']]
-        medals_data = filtered[filtered['Medal'].notna()]
+        medals_data = get_medal_records(filtered)
 
     # Group by Region
     tally = medals_data.groupby(['Region', 'NOC', 'Medal']).size().unstack(fill_value=0).reset_index()
@@ -237,7 +240,7 @@ def get_country_yearly_stats(df, country_name, deduplicate=True):
     if deduplicate:
         medals_source = get_deduplicated_medals(c_df)
     else:
-        medals_source = c_df[c_df['Medal'].notna()]
+        medals_source = get_medal_records(c_df)
 
     medals_yearly = medals_source.groupby(['Year', 'Season', 'Medal']).size().unstack(fill_value=0).reset_index()
     for col in ['Gold', 'Silver', 'Bronze']:
@@ -337,7 +340,7 @@ def get_host_nation_analysis(df, deduplicate=True):
     if deduplicate:
         medal_records = get_deduplicated_medals(analysis_df)
     else:
-        medal_records = analysis_df[analysis_df['Medal'].notna()]
+        medal_records = get_medal_records(analysis_df)
 
     medal_counts = (
         medal_records.groupby(['Year', 'Season', 'Region'])
@@ -432,7 +435,7 @@ def get_country_efficiency_leaderboard(df, min_athletes=50, season='Summer', ded
     if deduplicate:
         medals = get_deduplicated_medals(filtered)
     else:
-        medals = filtered[filtered['Medal'].notna()]
+        medals = get_medal_records(filtered)
 
     total_medals = medals.groupby('Region').size().reset_index(name='Medal_Count')
 
@@ -505,7 +508,7 @@ def get_sport_specialization(df, min_medals=15, deduplicate=True):
     if deduplicate:
         medals = get_deduplicated_medals(df)
     else:
-        medals = df[df['Medal'].notna()]
+        medals = get_medal_records(df)
 
     medals = medals[medals['Sport'].notna()]
 
@@ -583,7 +586,7 @@ def get_cold_war_rivalry_stats(df, deduplicate=True):
     if deduplicate:
         medals = get_deduplicated_medals(sub)
     else:
-        medals = sub[sub['Medal'].notna()]
+        medals = get_medal_records(sub)
 
     # Normalize Cold War superpowers
     cw_map = {
