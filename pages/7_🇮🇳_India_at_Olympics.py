@@ -10,6 +10,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import numpy as np
+import re
 import data_loader as dl
 import ui_utils as ui
 
@@ -21,14 +22,125 @@ ui.apply_custom_theme()
 df = dl.load_olympic_data()
 india_df = df[df['Region'] == 'India'].copy()
 
-# 3. Hero Banner
+# 3. Canonical Athlete Name Normalization & Directory
+@st.cache_data(show_spinner=False)
+def prepare_indian_athletes_catalogue(raw_df):
+    """
+    Builds a unified Indian athlete directory that resolves name inversions
+    across Olympic eras (e.g. Tokyo 2020/Paris 2024 uppercase surnames)
+    and enriches recent games records.
+    """
+    ind = raw_df[raw_df['Region'] == 'India'].copy()
+
+    canonical_aliases = {
+        "CHOPRA Neeraj": "Neeraj Chopra",
+        "Neeraj CHOPRA": "Neeraj Chopra",
+        "Neeraj Chopra": "Neeraj Chopra",
+        "Pusarla Venkata \"P. V.\" Sindhu": "PV Sindhu (Pusarla V. Sindhu)",
+        "PUSARLA V. Sindhu": "PV Sindhu (Pusarla V. Sindhu)",
+        "V. Sindhu PUSARLA": "PV Sindhu (Pusarla V. Sindhu)",
+        "MIRABAI Chanu Saikhom": "Mirabai Chanu Saikhom",
+        "Mirabai Chanu SAIKHOM": "Mirabai Chanu Saikhom",
+        "Saikhom Mirabai Chanu": "Mirabai Chanu Saikhom",
+        "BORGOHAIN Lovlina": "Lovlina Borgohain",
+        "Lovlina BORGOHAIN": "Lovlina Borgohain",
+        "BAJRANG Bajrang": "Bajrang Punia",
+        "Bajrang": "Bajrang Punia",
+        "Dhyan Chand Bais": "Major Dhyan Chand",
+        "Dhyan Chand": "Major Dhyan Chand",
+        "Mangte Chungneijang Mary Kom": "MC Mary Kom",
+        "HMANGTE Chungneijang Mery Kom": "MC Mary Kom",
+        "Khashaba Dadasaheb  Jahdav": "KD Jadhav (Khashaba Jadhav)",
+        "Khashaba Dadasaheb \"K. D.\" Jadhav": "KD Jadhav (Khashaba Jadhav)",
+        "Parattu Raveendran Sreejesh": "PR Sreejesh",
+        "PARATTU RAVEENDRAN Sreejesh": "PR Sreejesh",
+        "SINGH Manpreet": "Manpreet Singh",
+        "Manpreet SINGH": "Manpreet Singh",
+        "SINGH Harmanpreet": "Harmanpreet Singh",
+        "Harmanpreet SINGH": "Harmanpreet Singh",
+        "BHAKER Manu": "Manu Bhaker",
+        "Manu BHAKER": "Manu Bhaker",
+        "KUSALE Swapnil": "Swapnil Kusale",
+        "SARABJOT Singh": "Sarabjot Singh",
+        "ACHANTA Kamal": "Sharath Kamal Achanta",
+        "Sharath Kamal ACHANTA": "Sharath Kamal Achanta",
+        "BATRA Manika": "Manika Batra",
+        "Manika BATRA": "Manika Batra",
+        "ASHOK Aditi": "Aditi Ashok",
+        "Aditi ASHOK": "Aditi Ashok",
+        "SEHRAWAT Aman": "Aman Sehrawat",
+        "Norman Gilbert Pritchard (-Trevor)": "Norman Pritchard",
+        "Leander Adrian Paes": "Leander Paes",
+        "Balbir Singh Dosanjh, Sr.": "Balbir Singh Sr.",
+        "Leslie Walter Claudius": "Leslie Claudius",
+        "Udham Singh Kular": "Udham Singh",
+        "Sushil Kumar Solanki": "Sushil Kumar",
+        "Vijender Kumar Singh": "Vijender Singh",
+        "Gagan Narang": "Gagan Narang",
+        "Rajyavardhan Singh Rathore": "Rajyavardhan Singh Rathore",
+        "Karnam Malleswari": "Karnam Malleswari",
+        "Saina Nehwal": "Saina Nehwal",
+        "Sakshi Malik": "Sakshi Malik",
+        "Yogeshwar Dutt": "Yogeshwar Dutt",
+        "Ravi Kumar Dahiya": "Ravi Kumar Dahiya",
+        "Milkha Singh": "Milkha Singh",
+        "Pilavullakandi Thekkeparambil \"P. T.\" Usha": "PT Usha",
+        "Abhinav Bindra": "Abhinav Bindra",
+    }
+
+    def clean_name(raw):
+        raw_str = str(raw).strip()
+        if raw_str in canonical_aliases:
+            return canonical_aliases[raw_str]
+        m = re.match(r'^([A-Z]{2,})\s+([A-Za-z]+.*)$', raw_str)
+        if m:
+            return f"{m.group(2).strip()} {m.group(1).title().strip()}"
+        return raw_str
+
+    ind['Athlete_Name'] = ind['Name'].apply(clean_name)
+
+    # Enrich known Paris 2024 medals for Indian athletes
+    paris_2024_medals = {
+        ("Neeraj Chopra", 2024): ("Men's Javelin Throw", "Silver"),
+        ("Manu Bhaker", 2024): ("Women's 10m Air Pistol", "Bronze"),
+        ("Swapnil Kusale", 2024): ("Men's 50m Rifle 3 Positions", "Bronze"),
+        ("Aman Sehrawat", 2024): ("Men's Freestyle 57kg", "Bronze"),
+        ("Harmanpreet Singh", 2024): ("Men's Field Hockey", "Bronze"),
+        ("PR Sreejesh", 2024): ("Men's Field Hockey", "Bronze"),
+        ("Manpreet Singh", 2024): ("Men's Field Hockey", "Bronze"),
+    }
+    for (ath, yr), (ev, med) in paris_2024_medals.items():
+        mask = (ind['Athlete_Name'] == ath) & (ind['Year'] == yr)
+        if mask.any():
+            ind.loc[mask, 'Medal'] = med
+            ind.loc[mask, 'Event'] = ev
+
+    # Aggregate career metrics per athlete
+    ath_group = ind.groupby('Athlete_Name')
+    ath_summary = ath_group.agg(
+        Primary_Sport=('Sport', lambda x: x.mode()[0] if not x.empty else 'Olympic Sport'),
+        Total_Events=('Event', 'nunique'),
+        Editions_Count=('Year', 'nunique'),
+        First_Year=('Year', 'min'),
+        Last_Year=('Year', 'max'),
+        Total_Medals=('Medal', lambda x: x.notna().sum()),
+        Gold=('Medal', lambda x: (x == 'Gold').sum()),
+        Silver=('Medal', lambda x: (x == 'Silver').sum()),
+        Bronze=('Medal', lambda x: (x == 'Bronze').sum()),
+    ).reset_index()
+
+    return ind, ath_summary
+
+ind_athletes_records, ind_athletes_summary = prepare_indian_athletes_catalogue(df)
+
+# 4. Hero Banner
 ui.render_hero_banner(
     title="🇮🇳 India at the Olympics: 125 Years of History & Triumphs",
     subtitle="From Norman Pritchard's sprint silvers in Paris 1900 and the glorious 8-Gold Field Hockey Dynasty to modern champions across wrestling, shooting, badminton, boxing, and athletics, explore the inspiring journey of Indian Olympians.",
     badge="India Olympic Journey"
 )
 
-# 4. Data Precomputations
+# 5. Data Precomputations
 india_dedup = dl.get_deduplicated_medals(india_df)
 tot_dedup_medals = len(india_dedup)
 tot_raw_medals = india_df['Medal'].notna().sum()
@@ -44,7 +156,7 @@ india_rank_row = all_time_tally[all_time_tally['Region'] == 'India']
 india_rank = int(india_rank_row['Rank'].iloc[0]) if not india_rank_row.empty else "N/A"
 india_points = int(india_rank_row['Points'].iloc[0]) if not india_rank_row.empty else "N/A"
 
-# 5. Executive KPI Ribbon
+# 6. Executive KPI Ribbon
 k1, k2, k3, k4, k5, k6 = st.columns(6)
 k1.metric("All-Time Global Rank", f"#{india_rank}", f"{india_points} Weighted Points")
 k2.metric("Official Event Medals", f"{tot_dedup_medals}", f"{tot_raw_medals} Raw Medals", help="Counted once per team event to reflect official IOC podiums")
@@ -55,7 +167,7 @@ k6.metric("Unique Olympians Sent", f"{tot_athletes:,}", f"{editions_count} Olymp
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 6. Analytical Tabs
+# 7. Analytical Tabs
 tab_traj, tab_sports, tab_legends, tab_gender, tab_global = st.tabs([
     "📈 Medal History & The 4 Eras",
     "🏑 Sports & The Modern Shift",
@@ -298,59 +410,192 @@ with tab_legends:
         height=400
     )
 
-    # Interactive Indian Athlete Search & Career Lookup
+    # --------------------------------------------------------------------------
+    # Interactive Indian Athlete Search & Career Lookup (Dropdown of ALL Athletes)
+    # --------------------------------------------------------------------------
     st.markdown("<br>", unsafe_allow_html=True)
     st.subheader("🔍 Indian Olympian Career Lookup & Visual Timeline")
+    st.markdown("""
+    Select any Indian Olympian from the dropdown below to explore their complete career history, Olympic appearances, events contested, and medal achievements:
+    """)
 
-    search_query = st.text_input("Enter Athlete Name to Search (e.g., Neeraj Chopra, PV Sindhu, Abhinav Bindra, Leander Paes, Mary Kom, Milkha Singh):", value="Neeraj Chopra")
+    # Quick Filters Row
+    col_filter1, col_filter2 = st.columns([1, 1])
 
-    if search_query.strip():
-        ath_matches = india_df[india_df['Name'].str.contains(search_query, case=False, na=False)]
-        if ath_matches.empty:
-            st.warning(f"No Indian Olympian found matching '{search_query}'. Try searching for a partial name.")
+    with col_filter1:
+        all_sports_options = ["All Sports"] + sorted(ind_athletes_summary['Primary_Sport'].dropna().unique().tolist())
+        filter_sport = st.selectbox("Filter Athletes by Sport:", all_sports_options, index=0)
+
+    with col_filter2:
+        filter_cat = st.selectbox(
+            "Filter Athletes by Category:",
+            ["All Athletes", "Medal Winners Only (🏆)", "Multi-Games Olympians (2+ Games)"],
+            index=0
+        )
+
+    # Filter athlete summary
+    filtered_summary = ind_athletes_summary.copy()
+    if filter_sport != "All Sports":
+        filtered_summary = filtered_summary[filtered_summary['Primary_Sport'] == filter_sport]
+
+    if filter_cat == "Medal Winners Only (🏆)":
+        filtered_summary = filtered_summary[filtered_summary['Total_Medals'] > 0]
+    elif filter_cat == "Multi-Games Olympians (2+ Games)":
+        filtered_summary = filtered_summary[filtered_summary['Editions_Count'] >= 2]
+
+    # Sort alphabetically by athlete name
+    filtered_summary = filtered_summary.sort_values(by='Athlete_Name').reset_index(drop=True)
+
+    if filtered_summary.empty:
+        st.warning("No Indian Olympians match the chosen filter combination. Try selecting 'All Sports' or 'All Athletes'.")
+    else:
+        # Create display labels for the dropdown
+        label_dict = {}
+        for _, r in filtered_summary.iterrows():
+            name = r['Athlete_Name']
+            sport = r['Primary_Sport']
+            tot_m = r['Total_Medals']
+            ed_cnt = r['Editions_Count']
+            if tot_m > 0:
+                med_badges = []
+                if r['Gold'] > 0: med_badges.append(f"🥇 {r['Gold']}")
+                if r['Silver'] > 0: med_badges.append(f"🥈 {r['Silver']}")
+                if r['Bronze'] > 0: med_badges.append(f"🥉 {r['Bronze']}")
+                label_dict[name] = f"{name} ({sport} | {' '.join(med_badges)})"
+            elif ed_cnt > 1:
+                label_dict[name] = f"{name} ({sport} | {ed_cnt} Olympic Games)"
+            else:
+                label_dict[name] = f"{name} ({sport} | {r['First_Year']})"
+
+        athlete_names_list = filtered_summary['Athlete_Name'].tolist()
+
+        # Choose intuitive default athlete
+        default_idx = 0
+        if "Neeraj Chopra" in athlete_names_list:
+            default_idx = athlete_names_list.index("Neeraj Chopra")
+        elif "Major Dhyan Chand" in athlete_names_list:
+            default_idx = athlete_names_list.index("Major Dhyan Chand")
+
+        chosen_athlete = st.selectbox(
+            f"Select Indian Olympian ({len(athlete_names_list):,} athletes available):",
+            athlete_names_list,
+            index=default_idx,
+            format_func=lambda n: label_dict.get(n, n)
+        )
+
+        # Retrieve all historical records for chosen athlete
+        ath_records = ind_athletes_records[ind_athletes_records['Athlete_Name'] == chosen_athlete].sort_values(by=['Year', 'Event']).copy()
+        ath_info = filtered_summary[filtered_summary['Athlete_Name'] == chosen_athlete].iloc[0]
+
+        # Athlete Overview Metric Ribbon
+        st.markdown("<br>", unsafe_allow_html=True)
+        p1, p2, p3, p4, p5 = st.columns(5)
+        p1.metric("Sport", f"{ath_info['Primary_Sport']}")
+        
+        med_badge_str = f"🥇 {ath_info['Gold']} | 🥈 {ath_info['Silver']} | 🥉 {ath_info['Bronze']}" if ath_info['Total_Medals'] > 0 else "Best: Participant"
+        p2.metric("Total Medals", f"{ath_info['Total_Medals']}", med_badge_str)
+        
+        ed_years = sorted(ath_records['Year'].unique().tolist())
+        ed_str = f"{min(ed_years)} – {max(ed_years)}" if len(ed_years) > 1 else str(ed_years[0])
+        p3.metric("Olympic Editions", f"{ath_info['Editions_Count']} Games", ed_str)
+        p4.metric("Events Contested", f"{ath_info['Total_Events']}")
+        p5.metric("Career Span", f"{max(ed_years) - min(ed_years)} Years" if len(ed_years) > 1 else "1 Games")
+
+        # Podium Achievements & Milestones Callout
+        ath_medals = ath_records[ath_records['Medal'].notna()]
+        if not ath_medals.empty:
+            med_lines = []
+            for _, m_row in ath_medals.iterrows():
+                icon = "🥇" if m_row['Medal'] == 'Gold' else ("🥈" if m_row['Medal'] == 'Silver' else "🥉")
+                med_lines.append(f"**{icon} {m_row['Medal']} Medal** — {m_row['Event']} ({m_row['City']} {m_row['Year']})")
+            st.success("🌟 **Olympic Podium Achievements:**  \n" + "  \n".join(med_lines))
+
+        if ath_info['Editions_Count'] >= 3:
+            st.info(f"🏛️ **Olympic Veteran:** Represented India across **{ath_info['Editions_Count']} Olympic Games** ({', '.join(str(y) for y in ed_years)}) spanning {max(ed_years) - min(ed_years)} years.")
+
+        # Visual Career Timeline Plot
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f"#### 📅 Visual Olympic Timeline: {chosen_athlete}")
+
+        timeline_df = ath_records.copy()
+        timeline_df['Medal_Status'] = timeline_df['Medal'].fillna('Participation (Non-Medal)')
+        timeline_df['Point_Size'] = 16
+        timeline_df['Edition_Label'] = timeline_df['Year'].astype(str) + " " + timeline_df['City']
+
+        fig_ind_time = px.scatter(
+            timeline_df,
+            x="Year",
+            y="Event",
+            color="Medal_Status",
+            size="Point_Size",
+            hover_name="Edition_Label",
+            hover_data={
+                "Year": True,
+                "City": True,
+                "Sport": True,
+                "Event": True,
+                "Medal_Status": True,
+                "Point_Size": False
+            },
+            title=f"Olympic Event Timeline: {chosen_athlete}",
+            color_discrete_map={
+                "Gold": "#FFD700",
+                "Silver": "#C0C0C0",
+                "Bronze": "#CD7F32",
+                "Participation (Non-Medal)": "#3b82f6"
+            }
+        )
+
+        if len(ed_years) == 1:
+            yr = ed_years[0]
+            fig_ind_time.update_xaxes(
+                tickmode='array',
+                tickvals=[yr],
+                ticktext=[f"{yr}<br>{ath_records['City'].iloc[0]}"],
+                range=[yr - 2, yr + 2]
+            )
         else:
-            cand_names = sorted(ath_matches['Name'].unique().tolist())
-            chosen_ind_ath = st.selectbox("Select exact athlete:", cand_names, index=0)
-
-            rec_ind = india_df[india_df['Name'] == chosen_ind_ath].sort_values(by=['Year', 'Event'])
-            med_ind = rec_ind[rec_ind['Medal'].notna()]
-            tot_ath_m = len(med_ind)
-            ed_list = sorted(rec_ind['Year'].unique())
-
-            p1, p2, p3, p4 = st.columns(4)
-            p1.metric("Sport", f"{rec_ind['Sport'].iloc[0]}")
-            p2.metric("Total Medals", f"{tot_ath_m}")
-            p3.metric("Olympic Editions", f"{len(ed_list)} Games", f"{min(ed_list)} – {max(ed_list)}")
-            p4.metric("Events Contested", f"{rec_ind['Event'].nunique()}")
-
-            # Career Timeline Plot
-            timeline_ind = rec_ind.copy()
-            timeline_ind['Medal_Status'] = timeline_ind['Medal'].fillna('Participation (Non-Medal)')
-            timeline_ind['Point_Size'] = 14
-            
-            fig_ind_time = px.scatter(
-                timeline_ind,
-                x="Year",
-                y="Event",
-                color="Medal_Status",
-                size="Point_Size",
-                hover_data=["City", "Season", "Sport"],
-                title=f"Olympic Event Timeline: {chosen_ind_ath}",
-                color_discrete_map={
-                    "Gold": "#FFD700",
-                    "Silver": "#C0C0C0",
-                    "Bronze": "#CD7F32",
-                    "Participation (Non-Medal)": "#94a3b8"
-                }
+            year_labels = [f"{y}<br>{ath_records[ath_records['Year'] == y]['City'].iloc[0]}" for y in ed_years]
+            fig_ind_time.update_xaxes(
+                tickmode='array',
+                tickvals=ed_years,
+                ticktext=year_labels,
+                range=[min(ed_years) - 2, max(ed_years) + 2]
             )
-            fig_ind_time.update_layout(height=320, margin=dict(l=20, r=20, t=40, b=20))
-            st.plotly_chart(fig_ind_time, use_container_width=True)
 
-            st.dataframe(
-                rec_ind[['Year', 'City', 'Sport', 'Event', 'Medal']],
-                use_container_width=True,
-                hide_index=True
-            )
+        fig_ind_time.update_traces(marker=dict(line=dict(width=1.5, color='#ffffff')))
+        fig_ind_time.update_layout(
+            height=max(320, 45 * len(ath_records['Event'].unique()) + 140),
+            margin=dict(l=20, r=20, t=40, b=20),
+            yaxis=dict(title="Event", autorange="reversed")
+        )
+        st.plotly_chart(fig_ind_time, use_container_width=True)
+
+        # Complete Career Ledger Table
+        st.markdown(f"#### 📋 Complete Career Ledger ({len(ath_records)} Participations)")
+
+        ath_records['Result'] = ath_records['Medal'].apply(
+            lambda m: "🥇 Gold" if m == "Gold" else ("🥈 Silver" if m == "Silver" else ("🥉 Bronze" if m == "Bronze" else "Participant"))
+        )
+
+        display_ledger_table = ath_records[['Year', 'City', 'Season', 'Sport', 'Event', 'Result', 'Age']].sort_values(
+            by=['Year', 'Event'], ascending=[False, True]
+        )
+
+        st.dataframe(
+            display_ledger_table,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Year": st.column_config.NumberColumn("Year", format="%d", width="small"),
+                "City": "Host City",
+                "Season": "Season",
+                "Sport": "Sport",
+                "Event": st.column_config.TextColumn("Event", width="medium"),
+                "Result": st.column_config.TextColumn("Olympic Result", width="medium"),
+                "Age": st.column_config.NumberColumn("Age at Games", format="%d")
+            }
+        )
 
 # ==============================================================================
 # TAB 4: GENDER EVOLUTION & WOMEN CHAMPIONS
