@@ -28,6 +28,14 @@ with st.spinner("Loading and preprocessing 130 years of Olympic records..."):
     df = dl.load_olympic_data()
     dedup_medals = dl.get_deduplicated_medals(df)
 
+# Explicitly distinguish completed results from preliminary roster records.
+if 'Is_Preliminary_Entry' in df.columns and df['Is_Preliminary_Entry'].any():
+    st.info(
+        "Data coverage: historical medal results are available through Paris 2024. "
+        "2026 records in this source are preliminary athlete/entry records, not completed "
+        "Milan-Cortina medal results, and are excluded from the host-nation statistical test."
+    )
+
 # 3. Sidebar Configuration
 with st.sidebar:
     logo_path = os.path.join("assets", "Logo.webp")
@@ -52,8 +60,8 @@ with st.sidebar:
 
 # 4. Hero Banner
 ui.render_hero_banner(
-    title="Olympics Historical & Performance Analytics (1896 – 2026)",
-    subtitle="From Athens 1896 to Paris 2024, this platform explores 300,000+ Olympic records — blending engineering pipelines, hypothesis testing, and BI dashboards to reveal the stories behind medals, nations, and athletes."
+    title="Olympics Historical & Performance Analytics (1896 – 2024 results; 2026 roster preview)",
+    subtitle="Explore historical Olympic results through Paris 2024, alongside separately labelled 2026 preliminary roster entries, using data engineering, statistical analysis, and interactive BI dashboards."
 )
 
 # 5. Executive KPI Row
@@ -128,7 +136,7 @@ with c_right:
         top_lifts,
         x="Region",
         y="Lift_Pct",
-        title="Historical Medal % Increase When Hosting the Games",
+        title="Host-Nation Medal Difference vs. Participated Non-Host Editions",
         labels={"Lift_Pct": "Medal Lift %", "Region": "Host Nation"},
         color="Lift_Pct",
         color_continuous_scale="Reds"
@@ -217,7 +225,7 @@ st.plotly_chart(fig_sw_bar, use_container_width=True)
 # Analytical Findings & Interview Takeaways Card
 ui.render_insight_card(
     title="Host Country Advantage & Event-Level Granularity",
-    text=f"A paired two-sample Student's t-test across all historical host nations confirms that hosting the Olympic Games yields a statistically significant increase in medals won (t = {t_stat:.2f}, p-value = {p_val:.4e}). Furthermore, deduplicating team events reduces the USA's raw medal count from 5,935 down to 2,936 official medals, correcting the standard multi-counting flaw present in naive analyses."
+    text=f"The host-nation comparison uses one paired observation per host nation: average medals in hosted editions versus other editions in which that nation participated. Zero-medal participations are included and 2026 roster-only entries are excluded (t = {t_stat:.2f}, p-value = {p_val:.4e}). This observational test does not establish causation. Team-event deduplication is used to reduce athlete-row duplication when calculating event-level medal tallies."
 )
 
 st.markdown("---")
