@@ -18,24 +18,24 @@ ui.apply_custom_theme()
 df = dl.load_olympic_data()
 
 ui.render_hero_banner(
-    title="🏃 Athlete Demographics, Longevity & Age Peaks",
-    subtitle="Analyze age distributions across sporting disciplines, identify multi-decade persistence, track 130-year demographic shifts, and evaluate all-time Olympian performance profiles.",
-    badge="Module 3: Athlete Intelligence"
+    title="🏃 Olympic Athletes: Peak Ages, Longevity & Legends",
+    subtitle="Explore how the ideal competitive age varied across sports, see how Olympian demographics shifted over 130 years, and celebrate the incredible athletes who competed across multiple decades.",
+    badge="Athlete Demographics & Records"
 )
 
 # Key Records Row
 rec1, rec2, rec3, rec4 = st.columns(4)
-rec1.metric("All-Time Top Medalist", "Michael Phelps (USA)", "28 Medals (23 Gold)")
-rec2.metric("Top Female Medalist", "Larisa Latynina (URS)", "18 Medals (9 Gold)")
-rec3.metric("Youngest Medalist", "Dimitrios Loundras (GRE)", "Age 10 (Gymnastics, 1896)")
-rec4.metric("Oldest Sports Medalist", "Oscar Swahn (SWE)", "Age 72 (Shooting, 1920)")
+rec1.metric("Most Decorated Olympian", "Michael Phelps (USA)", "28 Medals (23 Gold)")
+rec2.metric("Most Decorated Female Olympian", "Larisa Latynina (URS)", "18 Medals (9 Gold)")
+rec3.metric("Youngest Medal Winner", "Dimitrios Loundras (GRE)", "Age 10 (Gymnastics, 1896)")
+rec4.metric("Oldest Sports Medal Winner", "Oscar Swahn (SWE)", "Age 72 (Shooting, 1920)")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # Tabs
 tab_leaderboard, tab_age, tab_longevity, tab_lookup = st.tabs([
     "🏆 All-Time Olympians & Medal Pyramid",
-    "📊 Age-Peak Dynamics & 130-Year Trends",
+    "📊 Peak Ages & 130-Year Trends",
     "⏳ Career Longevity & Multi-Games",
     "🔍 Athlete Career Lookup & Visual Timeline"
 ])
@@ -84,9 +84,9 @@ with tab_leaderboard:
         fig_ath_bar.update_layout(yaxis=dict(autorange="reversed"), height=460, margin=dict(l=20, r=20, t=40, b=20))
         st.plotly_chart(fig_ath_bar, use_container_width=True)
 
-    # NEW PLOT: The Olympic Medal Pyramid (Distribution of Athletes by Medal Tiers)
+    # The Olympic Medal Pyramid
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("#### 🔺 The Olympic Medal Pyramid: Rarity of Multi-Medalists")
+    st.markdown("#### 🔺 The Olympic Medal Pyramid: How Rare Was Multiple-Medal Success?")
     
     ath_med_totals = sub_ath[sub_ath['Medal'].notna()].groupby('Name').size().reset_index(name='Medal_Count')
     
@@ -94,14 +94,14 @@ with tab_leaderboard:
         if cnt == 1:
             return "1 Medal (Single Podium)"
         elif cnt <= 3:
-            return "2 – 3 Medals (Elite)"
+            return "2 – 3 Medals (Multiple Podium)"
         elif cnt <= 7:
             return "4 – 7 Medals (Legendary)"
         else:
             return "8+ Medals (All-Time Pantheon)"
             
     ath_med_totals['Tier'] = ath_med_totals['Medal_Count'].apply(get_tier)
-    tier_order = ["1 Medal (Single Podium)", "2 – 3 Medals (Elite)", "4 – 7 Medals (Legendary)", "8+ Medals (All-Time Pantheon)"]
+    tier_order = ["1 Medal (Single Podium)", "2 – 3 Medals (Multiple Podium)", "4 – 7 Medals (Legendary)", "8+ Medals (All-Time Pantheon)"]
     tier_summary = ath_med_totals['Tier'].value_counts().reindex(tier_order).reset_index()
     tier_summary.columns = ['Medal Tier', 'Athletes Count']
     tier_summary['Percentage'] = np.round((tier_summary['Athletes Count'] / tier_summary['Athletes Count'].sum()) * 100, 1)
@@ -111,7 +111,7 @@ with tab_leaderboard:
         x="Medal Tier",
         y="Athletes Count",
         text="Percentage",
-        title="Distribution of Olympic Medal-Winners by Career Medal Volume",
+        title="Distribution of Olympic Medal Winners by Career Medal Volume",
         color="Medal Tier",
         color_discrete_sequence=['#93c5fd', '#3b82f6', '#1d4ed8', '#fbbf24']
     )
@@ -121,9 +121,9 @@ with tab_leaderboard:
 
 # TAB 2: Age Dynamics & 130-Year Trend
 with tab_age:
-    st.subheader("Biological Peak-Performance Age Curve Across Sports")
+    st.subheader("When Did Athletes Reach Their Peak?")
     st.markdown("""
-    Explore how the peak performance age distribution varies dramatically between high-intensity cardiovascular sports and precision/equestrian sports.
+    See how peak athletic ages varied dramatically across events. While high-energy sports like gymnastics and swimming favored youth and flexibility, sports requiring steady nerves and precision (like shooting and equestrian) saw competitors winning well into their 40s and 50s.
     """)
 
     sub_age, stats_age = dl.get_age_dynamics_by_sport(df, min_athletes=600)
@@ -151,8 +151,8 @@ with tab_age:
             column_config={
                 "Median_Age": st.column_config.NumberColumn("Median Age", format="%.1f yrs"),
                 "IQR": st.column_config.NumberColumn("Interquartile Range", format="%.1f"),
-                "Min_Age": st.column_config.NumberColumn("Min", format="%d"),
-                "Max_Age": st.column_config.NumberColumn("Max", format="%d"),
+                "Min_Age": st.column_config.NumberColumn("Youngest", format="%d"),
+                "Max_Age": st.column_config.NumberColumn("Oldest", format="%d"),
                 "Count": st.column_config.NumberColumn("Sample Records", format="%d")
             },
             height=320
@@ -166,7 +166,7 @@ with tab_age:
             x="Age",
             color="Status",
             barmode="overlay",
-            title="Age Distribution: Medalists vs. Non-Medalists",
+            title="Age Distribution: Medal Winners vs. Non-Medal Competitors",
             marginal="box",
             opacity=0.6,
             color_discrete_map={"Medal Winner": "#eab308", "Non-Medal Competitor": "#64748b"}
@@ -174,9 +174,9 @@ with tab_age:
         fig_hist.update_layout(height=320, margin=dict(l=20, r=20, t=40, b=20))
         st.plotly_chart(fig_hist, use_container_width=True)
 
-    # NEW PLOT: 130-Year Olympian Age Trend Curve
+    # 130-Year Olympian Age Trend Curve
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("📈 130-Year Evolution of Olympian Age (1896 – 2024)")
+    st.subheader("📈 How Olympian Ages Evolved Over 130 Years (1896 – 2024)")
     age_trend = dl.get_athlete_age_trend(df, season='Summer')
     
     fig_age_trend = go.Figure()
@@ -205,13 +205,13 @@ with tab_age:
     st.plotly_chart(fig_age_trend, use_container_width=True)
 
     ui.render_insight_card(
-        title="Physical Demands & Career Windows",
-        text="The data reveals distinct physiological clusters: Gymnastics and Swimming feature the youngest median ages (20-22 years) due to flexibility and power-to-weight demands, whereas Equestrian and Shooting span athletes well into their late 40s and 50s, proving that fine motor precision and experience outlast raw explosive stamina."
+        title="How Age and Physical Demands Shaped Olympic Careers",
+        text="Looking across 130 years of Olympic competition, athletic windows varied dramatically depending on the physical demands of each sport. Swimmers and gymnasts peaked remarkably early—often between ages 18 and 22—where raw explosive power and flexibility gave younger competitors an edge. In contrast, sports that relied heavily on calm composure, tactical patience, and decades of muscle memory (such as equestrian and shooting events) allowed experienced athletes to compete and win medals well into their 40s, 50s, and beyond."
     )
 
 # TAB 3: Longevity & Multi-Games
 with tab_longevity:
-    st.subheader("Athlete Longevity: Multi-Games Persistence")
+    st.subheader("Athlete Longevity: Competing Across Multiple Games")
     
     ath_editions = df.groupby('Name')['Year'].nunique().value_counts().reset_index()
     ath_editions.columns = ['Editions_Contested', 'Number_of_Athletes']
@@ -233,7 +233,7 @@ with tab_longevity:
         st.plotly_chart(fig_lon, use_container_width=True)
 
     with c_lon2:
-        st.markdown("#### The Elite 1%: Competing Across 5+ Editions")
+        st.markdown("#### The Elite 1%: Competing Across 5 or More Olympic Games")
         legends = df.groupby(['Name', 'Region', 'Sport'])['Year'].agg(
             Editions='nunique',
             Span_Years=lambda x: x.max() - x.min(),
@@ -246,7 +246,7 @@ with tab_longevity:
             use_container_width=True,
             hide_index=True,
             column_config={
-                "Name": "Legend",
+                "Name": "Athlete",
                 "Region": "Country",
                 "Editions": "Games",
                 "Span_Years": "Career Span (Yrs)",
@@ -260,7 +260,6 @@ with tab_longevity:
 with tab_lookup:
     st.subheader("👤 Individual Athlete Profile & Visual Career Timeline")
     
-    sample_names = ["Michael Fred Phelps, II", "Usain St. Leo Bolt", "Larisa Semyonovna Latynina (Diriy-)", "Simone Arianne Biles", "Carl Lewis"]
     query = st.text_input("Enter Athlete Name to Search (e.g., Usain Bolt, Michael Phelps, Simone Biles):", value="Usain St. Leo Bolt")
 
     if query.strip():
@@ -287,7 +286,7 @@ with tab_lookup:
             p3.metric("Total Medals", f"{tot_ath_medals}", f"🥇 {g_cnt} | 🥈 {s_cnt} | 🥉 {b_cnt}")
             p4.metric("Editions Active", f"{len(editions_list)} Games", f"{min(editions_list)} - {max(editions_list)}")
 
-            # NEW PLOT: Interactive Visual Timeline
+            # Visual Timeline
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown(f"#### 📅 Visual Olympic Timeline: {chosen_athlete}")
             
@@ -320,6 +319,6 @@ with tab_lookup:
                 hide_index=True,
                 column_config={
                     "Year": st.column_config.NumberColumn("Year", format="%d"),
-                    "Medal": st.column_config.TextColumn("Medal Won", help="NaN indicates non-medal participation")
+                    "Medal": st.column_config.TextColumn("Medal Won", help="Blank indicates non-medal participation")
                 }
             )

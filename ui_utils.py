@@ -121,8 +121,8 @@ def apply_custom_theme():
         </style>
     """, unsafe_allow_html=True)
 
-def render_hero_banner(title, subtitle, badge="Data Analyst Portfolio Project"):
-    """Renders an executive header banner."""
+def render_hero_banner(title, subtitle, badge="Olympics Historical Analysis"):
+    """Renders a clean header banner."""
     st.markdown(f"""
         <div class="hero-box">
             <div>
@@ -135,10 +135,10 @@ def render_hero_banner(title, subtitle, badge="Data Analyst Portfolio Project"):
     """, unsafe_allow_html=True)
 
 def render_insight_card(title, text):
-    """Renders a business/interviewer takeaway box."""
+    """Renders a clear, humanized takeaway box."""
     st.markdown(f"""
         <div class="insight-card">
-            <div class="insight-title">💡 Analytical Finding: {title}</div>
+            <div class="insight-title">💡 Key Takeaway: {title}</div>
             <div class="insight-text">{text}</div>
         </div>
     """, unsafe_allow_html=True)

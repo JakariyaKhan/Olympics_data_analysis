@@ -18,9 +18,9 @@ ui.apply_custom_theme()
 df = dl.load_olympic_data()
 
 ui.render_hero_banner(
-    title="📈 Macro Trends, Gender Parity & Geopolitics",
-    subtitle="Trace the 130-year evolution of the Olympic Games: the journey toward 50/50 gender equality, the impact of world wars, Cold War superpowers rivalry, and decolonization expansion waves.",
-    badge="Module 5: Macro & Historical Intelligence"
+    title="📈 Olympic History: Gender Equality, Geopolitics & Global Growth",
+    subtitle="Trace how the Olympic Games evolved over 130 years: the long road toward equal participation for women, the impact of world wars and Cold War boycotts, and how new nations joined the global stage.",
+    badge="Historical & Geopolitical Trends"
 )
 
 # Metrics Ribbon
@@ -32,25 +32,26 @@ latest_f = g_ev[g_ev['Year'] == 2024]['Female_Pct'].values[0] if not g_ev[g_ev['
 total_nations_peak = summer_df.groupby('Year')['Region'].nunique().max()
 
 tr1, tr2, tr3, tr4 = st.columns(4)
-tr1.metric("1896 Female Athlete Share", f"{initial_f:.1f}%", "Pierre de Coubertin ban")
-tr2.metric("2024 Paris Female Share", f"{latest_f:.1f}%", "Historic 50/50 Parity Milestone")
-tr3.metric("Peak Nation Participation", f"{total_nations_peak} Nations", "Global Inclusivity")
-tr4.metric("Editions Cancelled Due to War", "3 Games", "1916 (WWI), 1940 & 1944 (WWII)")
+tr1.metric("1896 Women's Share", f"{initial_f:.1f}%", "Women barred from Athens 1896")
+tr2.metric("2024 Paris Women's Share", f"{latest_f:.1f}%", "Historic 50/50 Gender Parity")
+tr3.metric("Peak Nation Count", f"{total_nations_peak} Nations", "Global Participation")
+tr4.metric("Games Cancelled by War", "3 Editions", "1916 (WWI), 1940 & 1944 (WWII)")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # Tabs
 tab_gender, tab_geopolitics, tab_growth = st.tabs([
-    "⚖️ The 130-Year Road to Gender Parity",
-    "🌍 Geopolitics, Cold War Rivalry & Boycotts",
-    "🌐 Global Democratization & Expansion Waves"
+    "⚖️ The Road to Gender Equality",
+    "🌍 Geopolitics, Boycotts & Rivalries",
+    "🌐 Global Growth & Debuting Nations"
 ])
 
 # TAB 1: Gender Parity
 with tab_gender:
-    st.subheader("The Evolution of Female Participation in the Summer Olympic Games")
+    st.subheader("The Growth of Women's Participation in the Summer Games")
     st.markdown("""
-    From Pierre de Coubertin's original ban on women in 1896 to the **Paris 2024 Olympic Games**, where the International Olympic Committee allocated an exact **50/50 gender quota** for the first time in Olympic history.
+    When the modern Olympics began in Athens in 1896, founder Pierre de Coubertin barred women from competing entirely.
+    Over the next 130 years, female athletes steadily broke barriers—from just 22 women competing in tennis and golf in Paris 1900, to the passage of Title IX in the 1970s, all the way to Paris 2024, which became the first Olympic Games in history to achieve an exact 50/50 gender balance.
     """)
 
     fig_gen = go.Figure()
@@ -69,10 +70,10 @@ with tab_gender:
     milestones = [
         (1900, 2.2, "1900 Paris: 22 Women (Golf & Tennis)"),
         (1928, 9.6, "1928: First Track & Field events for women"),
-        (1972, 14.6, "1972: US Title IX Passed"),
-        (1984, 23.0, "1984: First Women's Marathon"),
-        (2012, 44.2, "2012 London: Every delegation had women"),
-        (2024, 49.1, "2024 Paris: 50/50 Parity Milestone")
+        (1972, 14.6, "1972: US Title IX passed"),
+        (1984, 23.0, "1984: First Women's Olympic Marathon"),
+        (2012, 44.2, "2012 London: Every national delegation included women"),
+        (2024, 49.1, "2024 Paris: Historic 50/50 Gender Balance Milestone")
     ]
 
     for yr, pct, txt in milestones:
@@ -99,9 +100,9 @@ with tab_gender:
     )
     st.plotly_chart(fig_gen, use_container_width=True)
 
-    # NEW PLOT: Female Medals Won Growth Curve
+    # Female Medals Won Growth Curve
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("🏅 Female Medals Won Volume Across Eras")
+    st.subheader("🏅 Medals Won by Gender Across Eras")
     medals_gender = summer_df[summer_df['Medal'].notna()].groupby(['Year', 'Gender']).size().unstack(fill_value=0).reset_index()
     if 'Female' in medals_gender.columns and 'Male' in medals_gender.columns:
         fig_med_gen = px.bar(
@@ -117,16 +118,16 @@ with tab_gender:
         st.plotly_chart(fig_med_gen, use_container_width=True)
 
     ui.render_insight_card(
-        title="Business Analogy: Diversity, Equity & Structural Change",
-        text="The trajectory of female representation follows a classic organizational change S-curve: fifty years of marginal experimentation (1900-1950), followed by an inflection point triggered by policy legislation (Title IX in 1972), accelerating into full structural parity by 2024. Demonstrating this analytical correlation showcases strong business contextualization."
+        title="How Women's Representation Reshaped the Games",
+        text="The journey toward gender equality in the Olympics took more than a century of persistence. For the first fifty years (1900–1950), women represented fewer than 10% of athletes. A major turning point arrived in the 1970s with landmark equal-opportunity policies like Title IX, which unlocked school funding and athletic scholarships. From that point on, participation surged upward until the 2024 Paris Games finally reached a full 50/50 gender balance."
     )
 
 # TAB 2: Geopolitics & Boycotts
 with tab_geopolitics:
-    st.subheader("Geopolitical Shockwaves: Boycotts, Wars & Cancellations")
+    st.subheader("When Geopolitics and World Events Impacted the Games")
     st.markdown("""
-    The Olympic Games have served as a proxy arena for global geopolitics throughout the 20th century.
-    Athlete participation plummets during major geopolitical crises and world wars.
+    The Olympic Games were never insulated from world events. During the 20th century, world wars forced three Games to be cancelled entirely (1916, 1940, and 1944).
+    Later, during the height of the Cold War, geopolitical tensions sparked massive boycotts—such as Montreal 1976, Moscow 1980, and Los Angeles 1984—where dozens of countries stayed home and athlete attendance dropped sharply.
     """)
 
     part_by_year = df.groupby(['Year', 'Season']).agg(
@@ -147,9 +148,9 @@ with tab_geopolitics:
 
     # Boycott annotations
     boycotts = [
-        (1980, 5252, "1980 Moscow Boycott (US-led: -66 Nations)"),
-        (1976, 6084, "1976 Montreal African Boycott (Apartheid protest)"),
-        (1984, 6791, "1984 Los Angeles Boycott (Soviet bloc retaliatory)")
+        (1980, 5252, "1980 Moscow Boycott (US-led: 66 Nations stayed home)"),
+        (1976, 6084, "1976 Montreal Boycott (28 African nations protested apartheid)"),
+        (1984, 6791, "1984 Los Angeles Boycott (Soviet-bloc retaliatory boycott)")
     ]
     for yr, yval, txt in boycotts:
         fig_geo.add_annotation(
@@ -173,11 +174,11 @@ with tab_geopolitics:
     )
     st.plotly_chart(fig_geo, use_container_width=True)
 
-    # NEW PLOT: Cold War Superpower Rivalry (1952 – 1988)
+    # Cold War Superpower Rivalry (1952 – 1988)
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("⚔️ The Cold War Sports Rivalry: USA vs. Soviet Union vs. East Germany (1952 – 1988)")
+    st.subheader("⚔️ The Cold War Sporting Rivalry (1952 – 1988)")
     st.markdown("""
-    During the Cold War, the Olympic medal table was contested as an ideological battlefield between capitalism and state-sponsored athletics programs.
+    Between 1952 and 1988, the Olympic podium became an ideological arena between the United States, the Soviet Union, and East Germany. Each country invested heavily in sports programs, turning every competition into a contest for international prestige.
     """)
 
     cw_df = dl.get_cold_war_rivalry_stats(df, deduplicate=True)
@@ -187,14 +188,14 @@ with tab_geopolitics:
         y=[c for c in cw_df.columns if c != 'Year'],
         title="Cold War Olympic Medal Tally (Summer Games 1952 – 1988)",
         markers=True,
-        labels={"value": "Official Medals Won", "Year": "Olympic Year", "variable": "Superpower"}
+        labels={"value": "Official Medals Won", "Year": "Olympic Year", "variable": "Country"}
     )
     fig_cw.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=20), hovermode="x unified")
     st.plotly_chart(fig_cw, use_container_width=True)
 
 # TAB 3: Growth & Expansion Waves
 with tab_growth:
-    st.subheader("Democratization: Growth in Participating Nations")
+    st.subheader("How the World Joined the Olympic Movement")
     
     fig_nat = px.bar(
         summer_part,
@@ -208,7 +209,7 @@ with tab_growth:
     fig_nat.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=20))
     st.plotly_chart(fig_nat, use_container_width=True)
 
-    # NEW PLOT: Debut Nations Waves by Decade
+    # Debut Nations Waves by Decade
     st.markdown("<br>", unsafe_allow_html=True)
     col_w1, col_w2 = st.columns(2)
 
@@ -228,7 +229,7 @@ with tab_growth:
         st.plotly_chart(fig_debut, use_container_width=True)
 
     with col_w2:
-        st.markdown("#### ❄️ Summer vs. Winter Growth Trajectory")
+        st.markdown("#### ❄️ Summer vs. Winter Growth Over Time")
         fig_sw_growth = px.line(
             part_by_year,
             x="Year",

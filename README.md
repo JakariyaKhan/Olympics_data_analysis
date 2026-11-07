@@ -4,97 +4,97 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> 🌐 **Live Deployed Dashboard:** [jakariyakhan-olympics-data-analysis-app-1pj7yu.streamlit.app](https://jakariyakhan-olympics-data-analysis-app-1pj7yu.streamlit.app/)
+> 🌐 **Live Interactive Dashboard:** [jakariyakhan-olympics-data-analysis-app-1pj7yu.streamlit.app](https://jakariyakhan-olympics-data-analysis-app-1pj7yu.streamlit.app/)
 
-An enterprise-grade exploratory data analysis platform bridging **data engineering**, **statistical hypothesis testing**, and **business intelligence** to extract actionable insights from over **300,000 Olympic records** across 130 years of competition.
+Welcome to an interactive journey through **130 years of Olympic history**. This project explored more than **300,000 athlete records** from Athens 1896 through Paris 2024 (and forward to the Milan-Cortina 2026 winter entries), turning raw spreadsheets into clear, human stories about the athletes, nations, and events that shaped the Games.
 
-Developed by **Jakariya Khan** as a flagship portfolio project for **Data Analyst** interviews.
-
----
-
-## 📌 Executive Summary & Key Analytical Findings
-
-Most entry-level Olympic analyses perform simple `groupby` aggregations on raw rows. This project goes deeper by addressing data granularity, schema drift across Olympic eras, and applying statistical rigor:
-
-1. **The Team Medal Duplication Trap:**
-   - In raw Olympic data, every member of a team sport squad (e.g., 12 basketball players or 4 relay runners) receives a row with a medal.
-   - Summing rows directly inflates the USA's historical tally to **5,935 medals**.
-   - Implementing **event-level composite primary key deduplication** (`Year`, `Season`, `City`, `Sport`, `Event`, `Medal`, `NOC`) normalizes this to the official IOC count of **2,936 medals**, eliminating a **102.1% squad inflation error**.
-
-2. **Empirical Proof of the "Host Country Advantage":**
-   - Conducted a paired Student's t-test comparing historical host country medal yields against their non-host baselines.
-   - Result: **$t = 5.42, p < 0.0001$**, rejecting the null hypothesis with >99.9% statistical confidence.
-   - Host nations experience an average medal yield increase of **$+54.2\%$** during their host year.
-
-3. **Title IX & The Trajectory of Gender Parity:**
-   - Traced female athlete representation from **0.0% in 1896** to **1.9% in 1900**, stagnating under 15% until the 1970s.
-   - Following the 1972 U.S. Title IX legislation and subsequent global policy shifts, female participation surged: **21.4% (1980)** $\rightarrow$ **34.0% (1996)** $\rightarrow$ **49.1% (Paris 2024)**, reaching near-perfect 50/50 parity.
-
-4. **Sport Monopolies & Talent Moats:**
-   - Identified extreme market concentration in specific sports: **Germany in Luge (58.1% of all historical medals)** and **China in Table Tennis (54.4%)**, highlighting institutional talent pipelines.
+Created by **Jakariya Khan** to showcase end-to-end data analysis, thoughtful data cleaning, and intuitive visual storytelling.
 
 ---
 
-## 🏗️ Repository Architecture
+## 📌 What We Discovered in the Data
+
+When we explored the raw Olympic records, we uncovered several fascinating stories and solved key data challenges:
+
+1. **Fixing the Team Medal Multi-Counting Trap:**
+   - In raw Olympic datasets, every single athlete on a winning squad received their own medal row. For example, when a basketball team or relay squad won gold, all 12 players or 4 runners were counted individually.
+   - If you simply summed up medal rows without adjusting for team sports, the United States appeared to have won **5,935 medals**.
+   - By grouping each competition down to a single event victory (`Year`, `Season`, `City`, `Sport`, `Event`, `Medal`, and `Country`), we corrected this multi-counting error. This brought the tally to the official International Olympic Committee (IOC) count of **2,936 medals**, removing an accidental **102.1% squad inflation**.
+
+2. **The Real Home-Ground Advantage:**
+   - Did hosting the Olympics genuinely help countries win more medals, or was it just a myth?
+   - We compared how each host country performed when competing at home versus when they traveled away. Using a paired Student's t-test, the statistics showed that host nations enjoyed an average **+54.2% medal boost** on home soil ($t = 5.42, p < 0.0001$).
+   - Athletes benefited from roaring home crowds, familiar climate, automatic qualification entries, and years of national sports investment leading up to the Games.
+
+3. **The 130-Year Road to Gender Equality:**
+   - When the modern Games began in Athens in 1896, founder Pierre de Coubertin barred women from competing altogether. In 1900, just 22 women (1.9% of all athletes) took part, restricted to golf and tennis.
+   - Female participation hovered below 15% for decades until the 1970s. Following landmark equal-opportunity legislation like the U.S. Title IX in 1972 and worldwide cultural shifts, women's participation steadily climbed: **21.4% in 1980** $\rightarrow$ **34.0% in 1996** $\rightarrow$ reaching a historic **49.1% at Paris 2024**, marking the first Games with a 50/50 gender balance.
+
+4. **Dynasties and Sport Monopolies:**
+   - A few nations built dynasties so dominant that they won the majority of all medals ever awarded in their signature sports. For example, **Germany captured 58.1% of all historical luge medals**, and **China won 54.4% of all table tennis medals** since 1988, reflecting decades of grassroots scouting and dedicated training academies.
+
+---
+
+## 🏗️ How the Project Is Organized
 
 ```
 Olympics_data_analysis/
 │
-├── app.py                           # Executive Overview & Methodology Hub
-├── data_loader.py                   # Data ingestion, schema reconciliation, deduplication & statistics
-├── ui_utils.py                      # Reusable modern UI styling and CSS components
-├── requirements.txt                 # Project dependencies
-├── olympics_cleaned_merged.csv      # Cleaned & consolidated fact dataset (300,266 records, 1896–2026)
+├── app.py                           # Main landing page with key takeaways and interactive charts
+├── data_loader.py                   # Data cleaning, team deduplication, and statistical tests
+├── ui_utils.py                      # Reusable modern styling, cards, and theme components
+├── requirements.txt                 # Python packages required to run the dashboard
+├── olympics_cleaned_merged.csv      # Cleaned and reconciled dataset (300,266 records, 1896–2026)
 ├── all_athlete_games.csv            # Original raw fact dataset
-├── all_regions.csv                  # NOC to Region mapping dictionary
+├── all_regions.csv                  # Country code (NOC) to country name dictionary
 │
 └── pages/
-    ├── 1_🏅_Medal_Analysis.py       # Official tallies, deduplication comparison, decade heatmaps, points efficiency
-    ├── 2_🌍_Country_Analysis.py     # Trajectories, host lift t-test, conversion efficiency, gender evolution, head-to-head
-    ├── 3_🏃_Athlete_Analysis.py     # Age-peak curves, 130-year trends, medal pyramid, longevity, career timelines
-    ├── 4_🎯_Sport_Analysis.py       # Monopolies, HHI market concentration, treemap hierarchies, gender parity by sport
-    ├── 5_📈_Historical_Trends.py    # Gender parity evolution, Cold War rivalry, boycotts, debut expansion waves
-    ├── 6_🔍_Data_Explorer.py        # Self-serve multi-dimensional BI sandbox with cohort visuals and CSV export
-    └── 7_🇮🇳_India_at_Olympics.py    # 125+ years records, Hockey dynasty, modern resurgence, Athlete Hall of Fame
+    ├── 1_🏅_Medal_Analysis.py       # Official rankings, squad deduplication comparison, and heatmaps
+    ├── 2_🌍_Country_Analysis.py     # Country trajectories, home-ground advantage, and rival comparisons
+    ├── 3_🏃_Athlete_Analysis.py     # Peak ages by sport, career longevity, and all-time legends
+    ├── 4_🎯_Sport_Analysis.py       # Sport dynasties, global competitiveness, and event expansion
+    ├── 5_📈_Historical_Trends.py    # Gender parity evolution, Cold War rivalry, and boycott years
+    ├── 6_🔍_Data_Explorer.py        # Self-serve filtering sandbox with instant charts and CSV export
+    └── 7_🇮🇳_India_at_Olympics.py    # 125+ years of India's Olympic journey, Hockey dynasty, and modern stars
 ```
 
 ---
 
-## 🛠️ Data Engineering & ETL Pipeline
+## 🛠️ How We Cleaned and Prepared the Data
 
-* **Optimized Fact Table Ingestion:**
-  - Standardized pipeline to ingest `olympics_cleaned_merged.csv`, featuring pre-consolidated region joins, validated medal indicator flags, and schema-reconciled 2024–2026 data.
-* **Schema Reconciliation for 2024 & 2026:**
-  - The 2024 Paris edition stored `Sport` and `Event` as stringified Python lists within `Sport Disciplines` and `Event List`.
-  - Built a regex-driven extraction parser that unwrapped list literals into canonical event strings.
-  - Segregated the 2026 Milan-Cortina Winter Games athlete entry rosters.
-* **Geopolitical Entity Resolution:**
-  - Resolved historical and modern NOC discrepancies: `AIN` $\rightarrow$ *Individual Neutral Athletes*, `ROT`/`EOR` $\rightarrow$ *Refugee Olympic Team*, `TUV` $\rightarrow$ *Tuvalu*, `ROC` $\rightarrow$ *Russia*.
-* **Performance Optimization:**
-  - Vectorized all string and date operations via Pandas.
-  - Cached transformations using Streamlit's `@st.cache_data`, reducing load times by **>65%**.
+* **Consolidated Data Pipeline:**
+  - We loaded our pre-cleaned and verified dataset (`olympics_cleaned_merged.csv`), which brought together athlete records, country names, and medal indicators into one clean format without slowing down the dashboard.
+* **Cleaning Recent Games (2024 & 2026):**
+  - In the Paris 2024 dataset, several sports and events were saved as raw text lists (like `['Athletics']`). We wrote a simple parser that unpacked these into clean, standardized sport and event names.
+  - We also kept the upcoming Milan-Cortina 2026 winter roster organized as registered entries with zero false medals.
+* **Harmonizing Country Names:**
+  - Over 130 years, countries changed names and borders. We reconciled historical and modern Olympic codes so that athletes were grouped with their home nations correctly (e.g., mapping `ROC` to Russia, `AIN` to Individual Neutral Athletes, and `ROT`/`EOR` to the Refugee Olympic Team).
+* **Speed and Performance:**
+  - We used Pandas vectorization and Streamlit's built-in caching (`@st.cache_data`) so every page loads quickly and responds smoothly to your filters.
 
 ---
 
-## 🚀 Getting Started Locally
+## 🚀 How to Run the Project Locally
 
-### Prerequisites
+### What You Need
 - Python 3.10 or higher
 - Git
 
-### Installation
+### Installation Steps
 ```bash
 # 1. Clone the repository
 git clone https://github.com/JakariyaKhan/Olympics_data_analysis.git
 cd Olympics_data_analysis
 
-# 2. Install required dependencies
+# 2. Install the necessary packages
 pip install -r requirements.txt
 
-# 3. Launch the Streamlit Analytics Platform
+# 3. Start the Streamlit application
 streamlit run app.py
 ```
-The application will launch automatically in your browser at `http://localhost:8501`.
+Your default web browser will open automatically at `http://localhost:8501`.
+
+---
 
 ## 🧑‍💻 Author
 

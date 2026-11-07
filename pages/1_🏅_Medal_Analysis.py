@@ -1,7 +1,7 @@
 """
 Olympics Medal Analysis Module
-Provides comprehensive medal tables, deduplication comparison, decade heatmaps,
-podium quality scatter plots, gold conversion rates, and cumulative historical growth curves.
+Provides comprehensive medal tables, team event deduplication comparisons,
+decade heatmaps, and historical cumulative growth curves.
 """
 
 import streamlit as st
@@ -19,13 +19,13 @@ ui.apply_custom_theme()
 df = dl.load_olympic_data()
 
 ui.render_hero_banner(
-    title="🏅 Olympic Medal Dynamics & Aggregation Engine",
-    subtitle="Evaluate official country medal rankings, measure the mathematical impact of team-event deduplication, analyze podium quality vs quantity, and track medal concentration over 130 years.",
-    badge="Module 1: Medal Intelligence"
+    title="🏅 Olympic Medal Tallies & Event Standings",
+    subtitle="Explore official all-time medal rankings, see how counting team events once per medal corrected historical tallies, and follow how nations built up their medal hauls over 130 years of competition.",
+    badge="Medal Standings & Analysis"
 )
 
-# Filters Row⚙️ Filter 
-st.subheader("Parameters")
+# Filters Row
+st.subheader("⚙️ Choose Your Filters")
 f_col1, f_col2, f_col3, f_col4 = st.columns(4)
 
 with f_col1:
@@ -40,10 +40,10 @@ with f_col2:
     year_opt = st.selectbox("Olympic Edition:", year_options, index=0, key="medal_year")
 
 with f_col3:
-    dedup_opt = st.toggle("Apply Team Event Deduplication", value=True, help="When enabled, counts 1 medal per team event (IOC standard). When disabled, every athlete on the squad is counted.")
+    dedup_opt = st.toggle("Count Team Events Once", value=True, help="When enabled, counts 1 medal per team event victory (official IOC standard). When disabled, every athlete on the squad is counted separately.")
 
 with f_col4:
-    top_n = st.slider("Display Top N Nations:", min_value=5, max_value=50, value=15, step=5)
+    top_n = st.slider("Number of Nations to Display:", min_value=5, max_value=50, value=15, step=5)
 
 # Compute Tally
 tally = dl.get_medal_tally(df, year=year_opt, season=season_opt, deduplicate=dedup_opt)
@@ -88,7 +88,7 @@ with col_table:
     )
 
 with col_chart:
-    st.subheader(f"📊 Medal Tier Breakdown (Top {min(top_n, 15)})")
+    st.subheader(f"📊 Medal Breakdown (Top {min(top_n, 15)})")
     chart_data = tally.head(min(top_n, 15))
     fig_bar = px.bar(
         chart_data,
@@ -104,7 +104,7 @@ with col_chart:
 
 # 2. Granularity Check: Raw Athlete Count vs Official Deduplicated Medals
 st.markdown("---")
-st.subheader("⚖️ The Data Granularity Gap: Raw vs. Deduplicated Medals")
+st.subheader("⚖️ Understanding the Team Sport Multi-Counting Effect")
 
 tally_raw = dl.get_medal_tally(df, year=year_opt, season=season_opt, deduplicate=False).head(10)
 tally_dedup = dl.get_medal_tally(df, year=year_opt, season=season_opt, deduplicate=True).head(10)
@@ -114,20 +114,20 @@ comp_df = tally_raw[['Region', 'Total']].merge(
     on='Region',
     suffixes=('_Raw_Athlete_Count', '_Official_Event_Count')
 )
-comp_df['Inflation_Due_To_Team_Events'] = comp_df['Total_Raw_Athlete_Count'] - comp_df['Total_Official_Event_Count']
-comp_df['Inflation_%'] = np.round((comp_df['Inflation_Due_To_Team_Events'] / comp_df['Total_Official_Event_Count']) * 100, 1)
+comp_df['Extra_Athlete_Medals'] = comp_df['Total_Raw_Athlete_Count'] - comp_df['Total_Official_Event_Count']
+comp_df['Inflation_%'] = np.round((comp_df['Extra_Athlete_Medals'] / comp_df['Total_Official_Event_Count']) * 100, 1)
 
 col_comp1, col_comp2 = st.columns([3, 2])
 with col_comp1:
     fig_comp = px.bar(
         comp_df,
         x="Region",
-        y=["Total_Official_Event_Count", "Inflation_Due_To_Team_Events"],
-        title="Official Event Medals vs Team Squad Inflation (Top 10 Nations)",
-        labels={"value": "Medals", "Region": "Nation"},
+        y=["Total_Official_Event_Count", "Extra_Athlete_Medals"],
+        title="Official Event Medals vs Extra Athlete Medals from Team Squads",
+        labels={"value": "Medals", "Region": "Nation", "variable": "Medal Type"},
         color_discrete_map={
             "Total_Official_Event_Count": "#2563eb",
-            "Inflation_Due_To_Team_Events": "#f87171"
+            "Extra_Athlete_Medals": "#f87171"
         },
         barmode="stack"
     )
@@ -135,27 +135,27 @@ with col_comp1:
     st.plotly_chart(fig_comp, use_container_width=True)
 
 with col_comp2:
-    st.markdown("#### Granularity Inflation Table")
+    st.markdown("#### How Team Sports Multiplied Raw Counts")
     st.dataframe(
         comp_df[['Region', 'Total_Official_Event_Count', 'Total_Raw_Athlete_Count', 'Inflation_%']],
         use_container_width=True,
         hide_index=True,
         column_config={
-            "Total_Official_Event_Count": "Official (Dedup)",
-            "Total_Raw_Athlete_Count": "Raw Count",
-            "Inflation_%": st.column_config.NumberColumn("Squad Inflation %", format="%.1f%%")
+            "Total_Official_Event_Count": "Official Medals",
+            "Total_Raw_Athlete_Count": "Raw Athlete Rows",
+            "Inflation_%": st.column_config.NumberColumn("Squad Multiplier %", format="%.1f%%")
         },
         height=350
     )
 
 ui.render_insight_card(
-    title="Data Granularity Flaw Explained for Interviews",
-    text="In datasets where each row represents an athlete participation, summing medal rows causes countries with high participation in large team sports (e.g. Football, Basketball, Ice Hockey, Rowing 8s) to have their medal totals inflated by 60% to 120%. A production Data Analyst must always verify the grain of the fact table and apply event-level grouping keys before computing official tallies."
+    title="Why Raw Athlete Counts Were Misleading",
+    text="In spreadsheets where each row represented an individual athlete, team sports like football, basketball, rowing, and ice hockey listed 10 to 22 medal rows for a single victory. This made team-heavy nations look like they had won up to twice as many medals as the official record books showed. Grouping competitions by event ensured that every team victory counted as one medal, matching what athletes actually stood on the podium to receive."
 )
 
-# 3. Podium Efficiency & Conversion Rates (NEW PLOTS)
+# 3. Podium Efficiency & Conversion Rates
 st.markdown("---")
-st.subheader("🎯 Podium Quality vs. Quantity & Conversion Efficiency")
+st.subheader("🎯 Medal Quality & Gold Conversion Rates")
 
 col_q1, col_q2 = st.columns(2)
 
@@ -171,7 +171,7 @@ with col_q1:
         hover_name="Region",
         hover_data=["Gold", "Silver", "Bronze", "Total", "Points"],
         text="Region",
-        title="Medal Points (Weighted 3-2-1) vs. Total Medals (Top 30 Nations)",
+        title="Weighted Medal Points (3-2-1) vs. Total Medals (Top 30 Nations)",
         labels={"Total": "Total Medals", "Points": "Weighted Medal Points", "Gold_Share_%": "Gold Share %"},
         color_continuous_scale="Viridis"
     )
@@ -191,7 +191,7 @@ with col_q2:
         orientation='h',
         color="Gold_Rate_%",
         color_continuous_scale="YlOrBr",
-        title="Highest Gold Medal Conversion Rates (% of Medals That Are Gold)",
+        title="Highest Gold Medal Conversion Rates (% of Medals Won That Were Gold)",
         labels={"Gold_Rate_%": "Gold % of Total Medals", "Region": "Nation"},
         text="Gold_Rate_%"
     )
@@ -199,10 +199,10 @@ with col_q2:
     fig_gold_rate.update_layout(yaxis=dict(autorange="reversed"), height=450, margin=dict(l=20, r=20, t=40, b=20))
     st.plotly_chart(fig_gold_rate, use_container_width=True)
 
-# 4. All-Time Cumulative Growth Curve of Top 5 Nations (NEW PLOT)
+# 4. All-Time Cumulative Growth Curve of Top 5 Nations
 st.markdown("---")
-st.subheader("📈 All-Time Cumulative Medal Growth Trajectory (Top 5 Nations)")
-st.markdown("Observe the relentless historical accumulation of Olympic medals across 130 years:")
+st.subheader("📈 How Medal Totals Grew Over Time (Top 5 Nations)")
+st.markdown("Take a look at how the top nations steadily built up their medal totals over more than a century of competition:")
 
 cum_yearly, top_regs = dl.get_cumulative_medals_top_n(df, top_n=5, season=season_opt, deduplicate=dedup_opt)
 fig_cum = go.Figure()
@@ -230,7 +230,7 @@ st.plotly_chart(fig_cum, use_container_width=True)
 
 # 5. Decade-by-Decade Dominance Heatmap
 st.markdown("---")
-st.subheader("🔥 Decade-by-Decade Elite Nations Heatmap")
+st.subheader("🔥 Decade-by-Decade Medal Heatmap")
 
 top_alltime_regions = tally_dedup['Region'].head(12).tolist()
 dedup_all = dl.get_deduplicated_medals(df[df['Season'] == season_opt] if season_opt != "All" else df)
@@ -248,5 +248,4 @@ if not decade_tally.empty and decade_tally.shape[1] > 0:
     fig_heat.update_layout(height=460, margin=dict(l=20, r=20, t=40, b=20))
     st.plotly_chart(fig_heat, use_container_width=True)
 else:
-    st.info("No decade dominance data available for the chosen criteria.")
-
+    st.info("No decade data available for the chosen selection.")

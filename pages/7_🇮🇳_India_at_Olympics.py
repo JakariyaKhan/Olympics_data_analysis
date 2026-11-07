@@ -23,9 +23,9 @@ india_df = df[df['Region'] == 'India'].copy()
 
 # 3. Hero Banner
 ui.render_hero_banner(
-    title="🇮🇳 India at the Olympics: Historical Stand & Performance Analytics",
-    subtitle="From Norman Pritchard's Paris 1900 breakthrough and the legendary 8-Gold Hockey Dynasty to the modern multi-sport renaissance (Beijing 2008 – Tokyo 2020), an analytical deep-dive into India's Olympic journey.",
-    badge="Module 7: India National Deep-Dive"
+    title="🇮🇳 India at the Olympics: 125 Years of History & Triumphs",
+    subtitle="From Norman Pritchard's sprint silvers in Paris 1900 and the glorious 8-Gold Field Hockey Dynasty to modern champions across wrestling, shooting, badminton, boxing, and athletics, explore the inspiring journey of Indian Olympians.",
+    badge="India Olympic Journey"
 )
 
 # 4. Data Precomputations
@@ -46,31 +46,31 @@ india_points = int(india_rank_row['Points'].iloc[0]) if not india_rank_row.empty
 
 # 5. Executive KPI Ribbon
 k1, k2, k3, k4, k5, k6 = st.columns(6)
-k1.metric("All-Time Global Rank", f"#{india_rank}", f"{india_points} Weighted Pts")
-k2.metric("Official Event Medals", f"{tot_dedup_medals}", f"{tot_raw_medals} Raw Podiums", help="Deduplicated: counts 1 medal per squad/team event (IOC standard)")
-k3.metric("🥇 Gold Medals", f"{tot_gold}", "8 Hockey | 1 Shoot | 1 Ath | 1 Alp")
-k4.metric("🥈 Silver Medals", f"{tot_silver}", "Ath, Shoot, Wre, Wgt, Bad")
-k5.metric("🥉 Bronze Medals", f"{tot_bronze}", "Hockey, Wre, Box, Bad, Ten")
+k1.metric("All-Time Global Rank", f"#{india_rank}", f"{india_points} Weighted Points")
+k2.metric("Official Event Medals", f"{tot_dedup_medals}", f"{tot_raw_medals} Raw Medals", help="Counted once per team event to reflect official IOC podiums")
+k3.metric("🥇 Gold Medals", f"{tot_gold}", "8 Hockey | 1 Shooting | 1 Athletics")
+k4.metric("🥈 Silver Medals", f"{tot_silver}", "Athletics, Shooting, Wrestling, Weightlifting, Badminton")
+k5.metric("🥉 Bronze Medals", f"{tot_bronze}", "Hockey, Wrestling, Boxing, Badminton, Tennis")
 k6.metric("Unique Olympians Sent", f"{tot_athletes:,}", f"{editions_count} Olympic Editions")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # 6. Analytical Tabs
 tab_traj, tab_sports, tab_legends, tab_gender, tab_global = st.tabs([
-    "📈 Historical Trajectory & The 4 Eras",
-    "🏑 Sport Dominance & Discipline Shift",
-    "🎖️ Hall of Fame & Athlete Explorer",
-    "👩 Gender Evolution & Women Champions",
-    "🌐 Global Standing & Peer Benchmarking"
+    "📈 Medal History & The 4 Eras",
+    "🏑 Sports & The Modern Shift",
+    "🎖️ Hall of Fame & Athlete Search",
+    "👩 Women Champions & Representation",
+    "🌐 Global Standing & Future Horizons"
 ])
 
 # ==============================================================================
 # TAB 1: HISTORICAL TRAJECTORY & ERAS
 # ==============================================================================
 with tab_traj:
-    st.subheader("📈 India's Olympic Medal Progression (1900 – Present)")
+    st.subheader("📈 India's Medal Progression Over Time (1900 – Present)")
     st.markdown("""
-    Explore how India's Olympic yield has evolved across Olympic editions, transitioning from field hockey dominance into modern multi-sport competitiveness.
+    Follow how India's medal hauls developed over the decades, transitioning from decades of field hockey mastery to a vibrant multi-sport presence in recent Games.
     """)
 
     yearly_ind = dl.get_country_yearly_stats(df, 'India', deduplicate=True)
@@ -134,44 +134,44 @@ with tab_traj:
     era1, era2, era3, era4 = st.columns(4)
     with era1:
         st.markdown("""
-        **1. The Colonial Dawn (1900 – 1920)**  
-        - **Norman Pritchard (1900):** 2 Silvers in 200m & 200m Hurdles in Paris.  
-        - First official multi-sport contingent organized by Sir Dorabji Tata at Antwerp 1920.
+        **1. The Early Years (1900 – 1920)**  
+        - **Norman Pritchard (1900):** Won 2 Silver medals in the 200m and 200m Hurdles in Paris.  
+        - In 1920, Sir Dorabji Tata organized India's first official multi-sport contingent for the Antwerp Games.
         """)
     with era2:
         st.markdown("""
-        **2. The Golden Hockey Monarchy (1928 – 1980)**  
-        - **6 Consecutive Golds** (1928–1956).  
-        - Total **8 Olympic Golds** in Field Hockey (1928, '32, '36, '48, '52, '56, '64, '80).  
-        - **KD Jadhav (1952):** Historic Freestyle Wrestling Bronze in Helsinki.
+        **2. The Golden Hockey Era (1928 – 1980)**  
+        - **6 Consecutive Golds** (1928–1956) during an extraordinary 30-match winning streak.  
+        - Won **8 Olympic Gold medals** in Field Hockey overall (1928, '32, '36, '48, '52, '56, '64, '80).  
+        - **KD Jadhav (1952):** Won an iconic Freestyle Wrestling Bronze in Helsinki, becoming independent India's first individual medalist.
         """)
     with era3:
         st.markdown("""
         **3. The Transition & Rebuilding (1984 – 1996)**  
-        - AstroTurf transition impacted Indian hockey.  
-        - **PT Usha (1984):** Missed 400m hurdles bronze by 1/100th of a second.  
-        - **Leander Paes (1996):** Bronze in Men's Singles Tennis broke a 44-year individual drought.
+        - The introduction of artificial AstroTurf shifted the dynamics of international hockey.  
+        - **PT Usha (1984):** Missed the 400m hurdles bronze in Los Angeles by just 1/100th of a second.  
+        - **Leander Paes (1996):** Captured Bronze in Men's Singles Tennis at Atlanta, ending a 44-year individual medal drought.
         """)
     with era4:
         st.markdown("""
         **4. The Modern Multi-Sport Era (2000 – Present)**  
-        - **Karnam Malleswari (2000):** First Indian woman medalist (Weightlifting).  
-        - **Abhinav Bindra (2008):** First individual Gold (10m Air Rifle).  
-        - **Tokyo 2020 Milestone:** Best-ever 7 medals including **Neeraj Chopra's** historic Athletics Gold!
+        - **Karnam Malleswari (2000):** Made history as India's first female Olympic medalist (Weightlifting Bronze).  
+        - **Abhinav Bindra (2008):** Won India's first individual Gold medal in Beijing (10m Air Rifle).  
+        - **Tokyo 2020 Milestone:** Best-ever haul of 7 medals, headlined by **Neeraj Chopra's** historic Athletics Gold!
         """)
 
     ui.render_insight_card(
-        title="Institutional Evolution & TOPS Scheme Impact",
-        text="India's Olympic trajectory reflects a systemic shift. For decades, India relied almost solely on the Men's Field Hockey squad for podium finishes. The launch of the Target Olympic Podium Scheme (TOPS) and private non-profit sports foundations (OGQ, JSW Sports) professionalized athlete coaching, sports science, and international exposure, leading to record multi-medal tallies in London 2012 (6 medals) and Tokyo 2020 (7 medals)."
+        title="How India Broadened Its Sporting Horizons",
+        text="For much of the 20th century, India's medal hopes rested almost entirely on the shoulders of the Men's Field Hockey team. That landscape changed dramatically over the last two decades. The creation of national training initiatives like the Target Olympic Podium Scheme (TOPS), along with non-profit sports foundations, brought world-class coaching, sports psychology, and international exposure to athletes across diverse events. That groundwork paid off with landmark multi-medal achievements in London 2012 (6 medals) and Tokyo 2020 (7 medals)."
     )
 
 # ==============================================================================
 # TAB 2: SPORT SPECIALIZATION & DISCIPLINE SHIFT
 # ==============================================================================
 with tab_sports:
-    st.subheader("🏑 Sport Dominance & Discipline Diversification")
+    st.subheader("🏑 Sports That Delivered Medals")
     st.markdown("""
-    Evaluate which sporting disciplines have driven India's podium finishes, and visualize the historic transition from single-sport dominance to multi-sport depth.
+    See which sports contributed most to India's medal haul, and explore how success branched out from field hockey into a wide range of individual sports in the 21st century.
     """)
 
     sport_medals = india_dedup.groupby(['Sport', 'Medal']).size().unstack(fill_value=0).reset_index()
@@ -190,7 +190,7 @@ with tab_sports:
             x=["Gold", "Silver", "Bronze"],
             y="Sport",
             orientation='h',
-            title="Official Medals Won by Sporting Code",
+            title="Official Medals Won by Sporting Discipline",
             color_discrete_map={"Gold": "#FFD700", "Silver": "#C0C0C0", "Bronze": "#CD7F32"},
             barmode="stack",
             labels={"value": "Medal Count", "Sport": "Sporting Discipline"}
@@ -200,7 +200,6 @@ with tab_sports:
 
     with col_s2:
         # Pre-2000 vs Post-2000 Shift Pie / Donut
-        pre_2000 = india_dedup[india_dedup['Year'] < 2000]
         post_2000 = india_dedup[india_dedup['Year'] >= 2000]
 
         shift_df = pd.DataFrame([
@@ -218,7 +217,7 @@ with tab_sports:
             names="Sport",
             values="Count",
             hole=0.45,
-            title="Modern Era Diversification: Post-2000 Medal Breakdown by Sport",
+            title="The 21st Century Shift: Medals Won Since 2000 by Sport",
             color_discrete_sequence=px.colors.qualitative.Bold
         )
         fig_shift.update_traces(textposition='inside', textinfo='percent+label')
@@ -227,7 +226,7 @@ with tab_sports:
 
     # Treemap of India's Medals Hierarchy
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("🌳 Hierarchical Medal Structure: Sport → Event → Medal Tier")
+    st.subheader("🌳 India's Olympic Medal Hierarchy (Sport → Event → Tier)")
     
     tree_data = india_dedup.groupby(['Sport', 'Event', 'Medal']).size().reset_index(name='Medal_Count')
     fig_ind_tree = px.treemap(
@@ -236,7 +235,7 @@ with tab_sports:
         values='Medal_Count',
         color='Medal',
         color_discrete_map={"Gold": "#eab308", "Silver": "#94a3b8", "Bronze": "#b45309", "(?)": "#3b82f6"},
-        title="India Olympic Podium Hierarchy (Deduplicated Event-Level)"
+        title="India Olympic Podium Hierarchy (Event-Level Deduplicated)"
     )
     fig_ind_tree.update_layout(height=480, margin=dict(l=10, r=10, t=40, b=10))
     st.plotly_chart(fig_ind_tree, use_container_width=True)
@@ -256,13 +255,13 @@ with tab_sports:
 with tab_legends:
     st.subheader("🎖️ India's Olympic Legends & Individual Multi-Medalists")
     st.markdown("""
-    Celebrate India's most decorated Olympians, explore multi-medalists, and look up career records for any Indian athlete across 130 years.
+    Celebrate India's most decorated Olympians, explore athletes who won multiple medals, and look up career records for any Indian Olympian across 130 years.
     """)
 
     # Multi-Medalist Spotlight Ribbon
     st.markdown("#### 🌟 Individual Multi-Medalists in Indian History")
     leg1, leg2, leg3, leg4 = st.columns(4)
-    leg1.metric("Norman Pritchard", "2 Medals (1900)", "🥈 200m | 🥈 200m Hurdles")
+    leg1.metric("Norman Pritchard", "2 Medals (Paris 1900)", "🥈 200m | 🥈 200m Hurdles")
     leg2.metric("Sushil Kumar", "2 Medals (2008, 2012)", "🥉 Beijing | 🥈 London (Wrestling)")
     leg3.metric("PV Sindhu", "2 Medals (2016, 2020)", "🥈 Rio | 🥉 Tokyo (Badminton)")
     leg4.metric("Neeraj Chopra", "2 Medals (2020, 2024)", "🥇 Tokyo | 🥈 Paris (Javelin)")
@@ -270,7 +269,7 @@ with tab_legends:
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Master Table of Indian Medalists
-    st.markdown("#### 📋 Complete Ledger of Indian Olympic Medals (Deduplicated Events)")
+    st.markdown("#### 📋 Complete Ledger of Indian Olympic Medals")
     
     medalist_records = india_dedup.copy()
     medalist_records['Athlete_Display'] = np.where(
@@ -301,9 +300,9 @@ with tab_legends:
 
     # Interactive Indian Athlete Search & Career Lookup
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("🔍 Indian Olympian Career Lookup & Visual Event Timeline")
+    st.subheader("🔍 Indian Olympian Career Lookup & Visual Timeline")
 
-    search_query = st.text_input("Enter Athlete Name to Search (e.g., Neeraj Chopra, Sindhu, Bindra, Paes, Mary Kom, Milkha Singh):", value="Neeraj Chopra")
+    search_query = st.text_input("Enter Athlete Name to Search (e.g., Neeraj Chopra, PV Sindhu, Abhinav Bindra, Leander Paes, Mary Kom, Milkha Singh):", value="Neeraj Chopra")
 
     if search_query.strip():
         ath_matches = india_df[india_df['Name'].str.contains(search_query, case=False, na=False)]
@@ -357,9 +356,9 @@ with tab_legends:
 # TAB 4: GENDER EVOLUTION & WOMEN CHAMPIONS
 # ==============================================================================
 with tab_gender:
-    st.subheader("👩 Gender Representation in Indian Delegations")
+    st.subheader("👩 Women Athletes in Indian Olympic Delegations")
     st.markdown("""
-    Track the growth of female athlete representation in Indian Olympic contingents, and analyze how Indian women athletes have powered modern medal success.
+    Follow the inspiring rise of female athletes in Indian contingents, and celebrate the trailblazing women who won medals on the world stage.
     """)
 
     # Gender share over time
@@ -401,7 +400,7 @@ with tab_gender:
             gender_evolution,
             x="Year",
             y=["Male", "Female"],
-            title="Indian Athlete Volume by Gender",
+            title="Indian Athletes Sent by Gender Over Time",
             color_discrete_map={"Male": "#3b82f6", "Female": "#ec4899"},
             barmode="stack",
             labels={"value": "Athletes", "Year": "Year"}
@@ -411,7 +410,7 @@ with tab_gender:
 
     # Modern Era Women Medals Highlight
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("⭐ The Women Who Changed Indian Sports (Sydney 2000 – Present)")
+    st.subheader("⭐ The Women Who Shaped Modern Indian Olympic History")
 
     w_medals_modern = india_dedup[(india_dedup['Year'] >= 2000) & (india_dedup['Gender'] == 'Female')]
     m_medals_modern = india_dedup[(india_dedup['Year'] >= 2000) & (india_dedup['Gender'] == 'Male')]
@@ -419,15 +418,15 @@ with tab_gender:
     wm_col1, wm_col2, wm_col3 = st.columns(3)
     wm_col1.metric("Women's Medals Since 2000", f"{len(w_medals_modern)} Medals", "Across 5 Unique Sports")
     wm_col2.metric("Men's Medals Since 2000", f"{len(m_medals_modern)} Medals", "Across 4 Unique Sports")
-    wm_col3.metric("Women's Share of Modern Podiums", f"{round(len(w_medals_modern) / (len(w_medals_modern) + len(m_medals_modern)) * 100, 1)}%", "High Conversion Ratio")
+    wm_col3.metric("Women's Share of Modern Podiums", f"{round(len(w_medals_modern) / (len(w_medals_modern) + len(m_medals_modern)) * 100, 1)}%", "High Podium Success Rate")
 
     st.markdown("""
-    - **Karnam Malleswari (Sydney 2000):** Bronze in Weightlifting (69kg) — *First Indian woman to ever win an Olympic medal*.
-    - **Mary Kom (London 2012):** Bronze in Flyweight Boxing — 6-time World Champion made Olympic boxing history.
-    - **Saina Nehwal (London 2012):** Bronze in Women's Singles — First Olympic medal for Indian Badminton.
-    - **PV Sindhu (Rio 2016 & Tokyo 2020):** Silver (2016) & Bronze (2020) — *First Indian woman with back-to-back Olympic medals*.
-    - **Sakshi Malik (Rio 2016):** Bronze in 58kg Freestyle — First Indian woman wrestler on the podium.
-    - **Mirabai Chanu (Tokyo 2020):** Silver in 49kg Weightlifting — Opened India's Tokyo medal account on Day 1.
+    - **Karnam Malleswari (Sydney 2000):** Bronze in Weightlifting (69kg) — *Became the first Indian woman to ever win an Olympic medal*.
+    - **Mary Kom (London 2012):** Bronze in Flyweight Boxing — The 6-time World Champion made Olympic boxing history in the debut of women's boxing.
+    - **Saina Nehwal (London 2012):** Bronze in Women's Singles — Won India's first Olympic medal in Badminton.
+    - **PV Sindhu (Rio 2016 & Tokyo 2020):** Silver (2016) & Bronze (2020) — *Became the first Indian woman to win medals at two consecutive Olympic Games*.
+    - **Sakshi Malik (Rio 2016):** Bronze in 58kg Freestyle — Became India's first female wrestler to stand on the Olympic podium.
+    - **Mirabai Chanu (Tokyo 2020):** Silver in 49kg Weightlifting — Opened India's Tokyo medal count on the very first day.
     - **Lovlina Borgohain (Tokyo 2020):** Bronze in Welterweight Boxing in her Olympic debut.
     """)
 
@@ -435,9 +434,9 @@ with tab_gender:
 # TAB 5: GLOBAL STANDING & BENCHMARKING
 # ==============================================================================
 with tab_global:
-    st.subheader("🌐 Global Standing & Peer Benchmarking")
+    st.subheader("🌐 Global Standing & Future Horizons")
     st.markdown("""
-    Evaluate India's position on the global stage, compare conversion rates against peer emerging sports nations, and examine strategic opportunities for future growth.
+    See how India compares against peer emerging sporting nations, and explore the strategic avenues that can help Indian athletes win more medals in future Games.
     """)
 
     # Select peer nations for benchmark
@@ -482,27 +481,27 @@ with tab_global:
                 height=360
             )
 
-    # Strategic SWOT Analysis for Data Analyst Interviews
+    # Strategic Diagnostic
     st.markdown("<br>", unsafe_allow_html=True)
-    st.subheader("💡 Strategic Diagnostic: The Indian Olympic Frontier")
+    st.subheader("💡 Strategic Reflections: The Road Ahead for Indian Sports")
 
     s1, s2 = st.columns(2)
     with s1:
         st.markdown("""
-        #### 🚀 Key Strengths & Catalysts
-        1. **High-Yield Niche Specializations:** Wrestling (7 medals) and Shooting (4 medals) demonstrate deep domestic talent pipelines and consistent multi-cycle medal output.
-        2. **Decentralized Female Empowerment:** Women athletes deliver outsized podium conversion, particularly in badminton, boxing, and weightlifting.
-        3. **Athletics Paradigm Shift:** Neeraj Chopra's Javelin Gold (2020) and Silver (2024) shattered the mental barrier in track and field for the sub-continent.
+        #### 🚀 Key Strengths & Proven Success
+        1. **Deep Grassroots in Niche Sports:** Wrestling (7 medals) and Shooting (4 medals) demonstrated consistent medal output across multiple Olympic cycles.
+        2. **Remarkable Impact of Female Athletes:** Women athletes delivered outstanding podium conversion rates, particularly in badminton, boxing, and weightlifting.
+        3. **Breaking Barriers in Track and Field:** Neeraj Chopra's Javelin Gold (2020) and Silver (2024) proved that Indian athletes can compete and win at the highest level in athletics.
         """)
     with s2:
         st.markdown("""
-        #### 🎯 Growth Horizons & Strategic Needs
-        1. **High-Event Discipline Penetration:** Swimming, Gymnastics, Rowing, and Cycling account for over 45% of Olympic medals. India currently has minimal entry depth in these medal-rich disciplines.
-        2. **Multi-Medal Squad Conversion:** India frequently records 4th place finishes (PT Usha 1984, Milkha Singh 1960, Dipa Karmakar 2016, Sania/Bopanna 2016, Men's Hockey Tokyo 4th women). Fine-tuning psychological coaching and high-pressure tournament execution will convert near-misses into podiums.
-        3. **2036 Olympic Host Bid:** National host status historically delivers an average +80% to +120% medal lift due to automatic qualification slots and 8-10 year funding cycles.
+        #### 🎯 Opportunities for Greater Growth
+        1. **Competing in Medal-Rich Sports:** Disciplines like Swimming, Gymnastics, Rowing, and Cycling account for over 45% of all Olympic medals. Expanding talent pipelines in these sports offers enormous potential.
+        2. **Turning Near-Misses into Podiums:** India historically recorded several heartbreaking fourth-place finishes (Milkha Singh in 1960, PT Usha in 1984, Dipa Karmakar in 2016, and Sania Mirza/Rohan Bopanna in 2016). Targeted sports psychology, mental conditioning, and tournament exposure help close this narrow gap.
+        3. **Hosting the Olympic Games:** Historical data showed that host nations gained an average +50% or greater medal increase, driven by automatic qualifications and long-term sports infrastructure funding.
         """)
 
     ui.render_insight_card(
-        title="Executive Analytical Takeaway for Portfolio Review",
-        text="India's Olympic evolution is a classic case of structural transformation from a single-point dependency (Field Hockey) to a diversified sports portfolio. The data confirms that targeted institutional funding (TOPS, private leagues, sports science) creates tangible exponential improvements in conversion rates. As India targets hosting the 2036 Olympic Games, scaling entries in multi-medal sports will be the primary lever for cracking the Top 20 medal nations."
+        title="The Big Picture: India's Path Forward",
+        text="India's Olympic journey showed an inspiring transition from a single-sport powerhouse to a multifaceted sporting nation. The data demonstrated that targeted funding, sports science, and grassroots training turned potential into podiums. Looking ahead, expanding participation in medal-rich sports like swimming, track and field, and gymnastics will be key to helping Indian athletes reach even higher on the global leaderboard."
     )

@@ -1,7 +1,7 @@
 """
 Olympics Country Analysis Module
-Deep-dive diagnostics for individual nations, delegation conversion efficiency,
-empirical host advantage testing, and head-to-head nation comparisons.
+Examines individual national performance over time, delegation conversion efficiency,
+the home-ground advantage, and head-to-head nation comparisons.
 """
 
 import streamlit as st
@@ -19,9 +19,9 @@ ui.apply_custom_theme()
 df = dl.load_olympic_data()
 
 ui.render_hero_banner(
-    title="🌍 National Performance & Efficiency Diagnostics",
-    subtitle="Evaluate historical trajectories, delegation conversion efficiency, host nation home-turf advantage, and multi-country comparative benchmarking.",
-    badge="Module 2: Country Intelligence"
+    title="🌍 Country Performance & Historical Trajectories",
+    subtitle="Follow how individual nations performed over time, see how team sizes related to medal totals, measure the real boost of competing on home soil, and compare rivals head-to-head.",
+    badge="Country Performance Analysis"
 )
 
 # Country Selector
@@ -32,7 +32,7 @@ c_col1, c_col2 = st.columns([3, 1])
 with c_col1:
     selected_country = st.selectbox("Select Country / Region to Analyze:", all_regions, index=all_regions.index(default_country) if default_country in all_regions else 0)
 with c_col2:
-    dedup_country = st.toggle("Deduplicate Team Medals", value=True, key="cntry_dedup")
+    dedup_country = st.toggle("Count Team Events Once", value=True, key="cntry_dedup")
 
 # Get country stats
 c_yearly = dl.get_country_yearly_stats(df, selected_country, deduplicate=dedup_country)
@@ -55,21 +55,21 @@ else:
     m3.metric("🥈 Silver Medals", f"{tot_silver:,}")
     m4.metric("🥉 Bronze Medals", f"{tot_bronze:,}")
     m5.metric("Games Hosted", f"{len(host_editions)} Editions")
-    m6.metric("Conversion Rate", f"{overall_eff}%", help="Total Medals won divided by total athlete participations")
+    m6.metric("Conversion Rate", f"{overall_eff}%", help="Medals won divided by total athlete participations")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Tabs
     tab_traj, tab_sports, tab_host, tab_compare = st.tabs([
-        "📈 Historical Trajectory & Delegations",
-        "🎯 Sport Specialization & Seasonal Split",
-        "🏠 Host Country Advantage (Hypothesis Testing)",
+        "📈 Historical Trajectory & Team Size",
+        "🎯 Top Sports & Seasonal Split",
+        "🏠 The Home-Ground Advantage",
         "⚔️ Head-to-Head Comparison"
     ])
 
     # TAB 1: Historical Trajectory
     with tab_traj:
-        st.subheader(f"Historical Olympic Trajectory: {selected_country}")
+        st.subheader(f"Olympic Medal Progression: {selected_country}")
         
         fig_traj = go.Figure()
         
@@ -111,7 +111,7 @@ else:
                 x="Year",
                 y="Athletes_Sent",
                 color="Season",
-                title="Delegation Size (Athletes Sent per Edition)",
+                title="Delegation Size (Number of Athletes Sent per Edition)",
                 labels={"Athletes_Sent": "Athletes Sent", "Year": "Olympic Year"}
             )
             fig_ath.update_layout(height=350, margin=dict(l=20, r=20, t=40, b=20))
@@ -122,7 +122,7 @@ else:
                 c_yearly,
                 x="Year",
                 y="Conversion_Rate_%",
-                title="Medal Conversion Rate % (Medals Won / Athletes Sent)",
+                title="Medal Conversion Rate (Medals Won per 100 Athletes)",
                 markers=True,
                 labels={"Conversion_Rate_%": "Conversion Rate (%)", "Year": "Olympic Year"}
             )
@@ -130,7 +130,7 @@ else:
             fig_eff.update_layout(height=350, margin=dict(l=20, r=20, t=40, b=20))
             st.plotly_chart(fig_eff, use_container_width=True)
 
-        # NEW PLOTS: Gender Participation Breakdown & Delegation vs Medal Correlation
+        # Gender Participation Breakdown & Delegation vs Medal Correlation
         st.markdown("<br>", unsafe_allow_html=True)
         c3_sub, c4_sub = st.columns(2)
         with c3_sub:
@@ -140,7 +140,7 @@ else:
                     c_gender,
                     x="Year",
                     y=["Male", "Female"],
-                    title=f"Gender Delegation Composition: {selected_country}",
+                    title=f"Men and Women in the Delegation: {selected_country}",
                     labels={"value": "Athletes Count", "Year": "Olympic Year"},
                     color_discrete_map={"Male": "#3b82f6", "Female": "#ec4899"},
                     barmode="stack"
@@ -160,7 +160,7 @@ else:
                     x="Athletes_Sent",
                     y="Total_Medals",
                     trendline=trendline_arg,
-                    title=f"Delegation Size vs. Medal Count Correlation ({selected_country})",
+                    title=f"Do Larger Delegations Win More Medals? ({selected_country})",
                     labels={"Athletes_Sent": "Athletes Sent", "Total_Medals": "Total Medals Won"},
                     hover_data=["Year", "Season"]
                 )
@@ -170,7 +170,7 @@ else:
                     x="Athletes_Sent",
                     y="Total_Medals",
                     trendline=None,
-                    title=f"Delegation Size vs. Medal Count Correlation ({selected_country})",
+                    title=f"Do Larger Delegations Win More Medals? ({selected_country})",
                     labels={"Athletes_Sent": "Athletes Sent", "Total_Medals": "Total Medals Won"},
                     hover_data=["Year", "Season"]
                 )
@@ -180,7 +180,7 @@ else:
 
     # TAB 2: Sport Specialization
     with tab_sports:
-        st.subheader(f"Top Medal-Producing Sports & Seasonal Split: {selected_country}")
+        st.subheader(f"Top Sports & Seasonal Split: {selected_country}")
         c_df = df[df['Region'] == selected_country]
         if dedup_country:
             c_medals = dl.get_deduplicated_medals(c_df)
@@ -229,11 +229,11 @@ else:
                     fig_sw_donut.update_layout(height=460, margin=dict(l=20, r=20, t=40, b=20))
                     st.plotly_chart(fig_sw_donut, use_container_width=True)
 
-    # TAB 3: Host Country Advantage (Hypothesis Testing)
+    # TAB 3: Host Country Advantage
     with tab_host:
-        st.subheader("🏠 Host Country Advantage (Empirical Hypothesis Testing)")
+        st.subheader("🏠 The Home-Ground Advantage: Did Hosting the Games Help?")
         st.markdown("""
-        **Business / Research Hypothesis:** *Nations demonstrate a statistically significant increase in medal yield during Olympic editions they host compared to editions held abroad.*
+        Did countries actually win more medals when they competed on home soil? We compared each host country's average medal tally during the Games they hosted against their regular record in away Games.
         """)
 
         host_summary, t_stat, p_val = dl.get_host_nation_analysis(df, deduplicate=dedup_country)
@@ -243,9 +243,9 @@ else:
         else:
             h1, h2, h3 = st.columns(3)
             avg_lift_all = host_summary['Lift_Pct'].mean()
-            h1.metric("Average Medal Lift When Hosting", f"+{avg_lift_all:.1f}%")
+            h1.metric("Average Medal Increase on Home Soil", f"+{avg_lift_all:.1f}%")
             h2.metric("Paired t-statistic", f"{t_stat:.2f}" if not np.isnan(t_stat) else "N/A")
-            h3.metric("p-value", f"{p_val:.4e}" if not np.isnan(p_val) else "N/A", help="p < 0.05 indicates reject null hypothesis with high confidence")
+            h3.metric("p-value", f"{p_val:.4e}" if not np.isnan(p_val) else "N/A", help="A p-value below 0.05 shows that this increase was statistically significant and not just luck")
 
             st.markdown("<br>", unsafe_allow_html=True)
             st.dataframe(
@@ -253,30 +253,30 @@ else:
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "Region": "Host Nation",
+                    "Region": "Host Country",
                     "Host_Editions_Count": "Games Hosted",
-                    "Avg_Medals_When_Host": st.column_config.NumberColumn("Avg Medals (Host)", format="%.1f"),
+                    "Avg_Medals_When_Host": st.column_config.NumberColumn("Avg Medals (At Home)", format="%.1f"),
                     "Avg_Medals_Non_Host": st.column_config.NumberColumn("Avg Medals (Away)", format="%.1f"),
-                    "Abs_Lift": st.column_config.NumberColumn("Absolute Lift", format="%.1f"),
-                    "Lift_Pct": st.column_config.NumberColumn("Percentage Lift (%)", format="%.1f%%")
+                    "Abs_Lift": st.column_config.NumberColumn("Extra Medals per Games", format="%.1f"),
+                    "Lift_Pct": st.column_config.NumberColumn("Medal Boost (%)", format="%.1f%%")
                 }
             )
 
             p_val_str = f"{p_val:.4e}" if not np.isnan(p_val) else "< 0.001"
             t_stat_str = f"{t_stat:.2f}" if not np.isnan(t_stat) else "N/A"
             ui.render_insight_card(
-                title="Statistical Validation for Data Analyst Interviews",
-                text=f"A paired Student's t-test comparing historical host country medal yields against their non-host baseline yields a t-statistic of {t_stat_str} and a p-value of {p_val_str} (p < 0.001). We reject the null hypothesis at the 99.9% confidence interval. Factors driving this effect include home crowd morale, automatic event qualification, familiarity with climate and venues, and long-term national sports funding leading up to the bid."
+                title="The Home Advantage Was Real and Significant",
+                text=f"When we compared host nations against their typical away baseline using a paired Student's t-test, the statistics showed a substantial and genuine boost (t = {t_stat_str}, p-value = {p_val_str}). Host countries won an average of over 50% more medals on home soil. Athletes benefited from passionate home crowds, familiar climate and venues, automatic qualification berths, and years of focused national sports funding leading up to the Games."
             )
 
     # TAB 4: Head-to-Head Comparison
     with tab_compare:
-        st.subheader("⚔️ Head-to-Head Nation Benchmark")
+        st.subheader("⚔️ Head-to-Head Country Comparison")
         rival_candidates = [c for c in all_regions if c != selected_country]
         if not rival_candidates:
             st.info("No comparative nations available.")
         else:
-            comp_country = st.selectbox("Select Benchmark Rival Country:", rival_candidates, index=0)
+            comp_country = st.selectbox("Select Rival Country to Compare:", rival_candidates, index=0)
             comp_yearly = dl.get_country_yearly_stats(df, comp_country, deduplicate=dedup_country)
 
             c_a_medals = c_yearly['Total_Medals'].sum()
@@ -318,7 +318,7 @@ else:
 
             # Sport-by-Sport Direct Medal Comparison
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown(f"#### 🥊 Sport-by-Sport Direct Medal Comparison: {selected_country} vs {comp_country}")
+            st.markdown(f"#### 🥊 Sport-by-Sport Direct Comparison: {selected_country} vs {comp_country}")
             
             c1_m = dl.get_deduplicated_medals(df[df['Region'] == selected_country]).groupby('Sport').size().reset_index(name=selected_country)
             c2_m = dl.get_deduplicated_medals(df[df['Region'] == comp_country]).groupby('Sport').size().reset_index(name=comp_country)
@@ -347,4 +347,3 @@ else:
                 )
                 fig_sport_comp.update_layout(yaxis=dict(autorange="reversed"), height=420, margin=dict(l=20, r=20, t=40, b=20))
                 st.plotly_chart(fig_sport_comp, use_container_width=True)
-
