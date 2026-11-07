@@ -142,6 +142,15 @@ def load_olympic_data():
     df['Silver Medal'] = df['Medal'] == 'Silver'
     df['Bronze Medal'] = df['Medal'] == 'Bronze'
     df['Results Available'] = df['Sport'].notna() & df['Event'].notna()
+    # The source snapshot contains 2026 roster entries, not completed event results.
+    # Keep these records available for exploration, but label them explicitly so
+    # they are not silently treated as historical results in analytical summaries.
+    df['Is_Preliminary_Entry'] = (df['Year'] == 2026) & df['Medal'].isna()
+    df['Record_Status'] = np.select(
+        [df['Is_Preliminary_Entry'], df['Medal'].notna()],
+        ['2026 roster entry — results not included in source data', 'Medal result'],
+        default='Participation record — no medal'
+    )
 
     # Medal Points: 3 for Gold, 2 for Silver, 1 for Bronze
     point_map = {'Gold': 3, 'Silver': 2, 'Bronze': 1}
@@ -294,54 +303,116 @@ def get_country_summer_vs_winter(df, country_name, deduplicate=True):
 
 def get_host_nation_analysis(df, deduplicate=True):
     """
-    Analyzes historical host nation performance lift:
-    Computes average medals won when hosting vs. when not hosting,
-    percentage lift, and runs a paired t-test for statistical significance.
-    """
-    if deduplicate:
-        medals = get_deduplicated_medals(df)
-    else:
-        medals = df[df['Medal'].notna()]
+    Compares each host nation's average medal yield in editions it hosted
+    with its average yield in other editions where it participated.
 
-    yearly = medals.groupby(['Year', 'Season', 'Region']).size().reset_index(name='Medals')
+    Important:
+    - Builds the comparison from athlete participation records, then left-joins
+      medal counts so participating zero-medal editions are retained.
+    - Excludes 2026 roster-only rows because the source snapshot does not contain
+      completed 2026 medal results.
+    - The paired t-test is across host nations (one host mean and one non-host
+      mean per nation), not across individual Olympic editions. It is descriptive
+      and does not establish that hosting caused a medal increase.
+    """
+    analysis_df = df.copy()
+    if 'Is_Preliminary_Entry' in analysis_df.columns:
+        analysis_df = analysis_df[~analysis_df['Is_Preliminary_Entry']].copy()
+
+    if analysis_df.empty:
+        return pd.DataFrame(), np.nan, np.nan
+
+    # Establish the participation grain first. A country that competed but won
+    # no medals must remain in the panel with a medal count of zero.
+    participation = (
+        analysis_df[['Year', 'Season', 'Region']]
+        .dropna(subset=['Year', 'Season', 'Region'])
+        .drop_duplicates()
+    )
+
+    if deduplicate:
+        medal_records = get_deduplicated_medals(analysis_df)
+    else:
+        medal_records = analysis_df[analysis_df['Medal'].notna()]
+
+    medal_counts = (
+        medal_records.groupby(['Year', 'Season', 'Region'])
+        .size()
+        .reset_index(name='Medals')
+    )
+    edition_panel = participation.merge(
+        medal_counts, on=['Year', 'Season', 'Region'], how='left'
+    )
+    edition_panel['Medals'] = edition_panel['Medals'].fillna(0).astype(int)
+
+    host_keys = {
+        (year, season, info['Region'])
+        for (year, season), info in HOST_EDITIONS.items()
+    }
+    edition_panel['Is_Host_Edition'] = [
+        (int(year), season, region) in host_keys
+        for year, season, region in zip(
+            edition_panel['Year'], edition_panel['Season'], edition_panel['Region']
+        )
+    ]
 
     records = []
-    host_regions = set([v['Region'] for v in HOST_EDITIONS.values()])
+    host_regions = sorted({info['Region'] for info in HOST_EDITIONS.values()})
 
     for region in host_regions:
-        reg_data = yearly[yearly['Region'] == region]
-        if reg_data.empty:
+        region_panel = edition_panel[edition_panel['Region'] == region]
+        host_medals = region_panel.loc[
+            region_panel['Is_Host_Edition'], 'Medals'
+        ].astype(float)
+        non_host_medals = region_panel.loc[
+            ~region_panel['Is_Host_Edition'], 'Medals'
+        ].astype(float)
+
+        # Require at least one observed host and non-host participation edition.
+        if host_medals.empty or non_host_medals.empty:
             continue
 
-        host_editions_for_reg = [
-            k for k, v in HOST_EDITIONS.items() if v['Region'] == region
-        ]
+        host_avg = float(host_medals.mean())
+        non_host_avg = float(non_host_medals.mean())
+        abs_lift = host_avg - non_host_avg
+        lift_pct = (
+            (abs_lift / non_host_avg) * 100
+            if non_host_avg > 0 else np.nan
+        )
 
-        host_medals = reg_data[reg_data.apply(lambda r: (r['Year'], r['Season']) in host_editions_for_reg, axis=1)]['Medals']
-        non_host_medals = reg_data[reg_data.apply(lambda r: (r['Year'], r['Season']) not in host_editions_for_reg, axis=1)]['Medals']
+        records.append({
+            'Region': region,
+            'Host_Editions_Count': int(len(host_medals)),
+            'Non_Host_Editions_Count': int(len(non_host_medals)),
+            'Avg_Medals_When_Host': round(host_avg, 2),
+            'Avg_Medals_Non_Host': round(non_host_avg, 2),
+            'Abs_Lift': round(abs_lift, 2),
+            'Lift_Pct': round(lift_pct, 1) if np.isfinite(lift_pct) else np.nan,
+            'Host_List': host_medals.tolist(),
+            'Non_Host_List': non_host_medals.tolist()
+        })
 
-        if len(host_medals) > 0 and len(non_host_medals) > 0:
-            h_avg = host_medals.mean()
-            nh_avg = non_host_medals.mean()
-            lift_pct = ((h_avg - nh_avg) / nh_avg) * 100 if nh_avg > 0 else 0
+    summary_df = pd.DataFrame(records)
+    if summary_df.empty:
+        return summary_df, np.nan, np.nan
 
-            records.append({
-                'Region': region,
-                'Host_Editions_Count': len(host_medals),
-                'Avg_Medals_When_Host': round(h_avg, 1),
-                'Avg_Medals_Non_Host': round(nh_avg, 1),
-                'Abs_Lift': round(h_avg - nh_avg, 1),
-                'Lift_Pct': round(lift_pct, 1),
-                'Host_List': list(host_medals),
-                'Non_Host_List': list(non_host_medals)
-            })
+    summary_df = summary_df.sort_values(
+        by='Lift_Pct', ascending=False, na_position='last'
+    ).reset_index(drop=True)
 
-    summary_df = pd.DataFrame(records).sort_values(by='Lift_Pct', ascending=False)
-
-    if len(summary_df) >= 5:
-        t_stat, p_val = stats.ttest_rel(summary_df['Avg_Medals_When_Host'], summary_df['Avg_Medals_Non_Host'])
+    # Each host nation contributes one paired observation: its host-edition
+    # average and its non-host-edition average.
+    paired = summary_df[
+        ['Avg_Medals_When_Host', 'Avg_Medals_Non_Host']
+    ].dropna()
+    if len(paired) >= 2:
+        t_stat, p_val = stats.ttest_rel(
+            paired['Avg_Medals_When_Host'],
+            paired['Avg_Medals_Non_Host']
+        )
+        t_stat, p_val = float(t_stat), float(p_val)
     else:
-        t_stat, p_val = 0, 1
+        t_stat, p_val = np.nan, np.nan
 
     return summary_df, t_stat, p_val
 
