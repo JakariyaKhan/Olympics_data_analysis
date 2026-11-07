@@ -1,4 +1,4 @@
-# 🏅 Olympics Historical & Performance Analytics (1896 – 2026)
+# 🏅 Olympics Historical & Performance Analytics (1896–2024 results | 2026 roster preview)
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://jakariyakhan-olympics-data-analysis-app-1pj7yu.streamlit.app/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
@@ -6,7 +6,7 @@
 
 > 🌐 **Live Deployed Dashboard:** [jakariyakhan-olympics-data-analysis-app-1pj7yu.streamlit.app](https://jakariyakhan-olympics-data-analysis-app-1pj7yu.streamlit.app/)
 
-An enterprise-grade exploratory data analysis platform bridging **data engineering**, **statistical hypothesis testing**, and **business intelligence** to extract actionable insights from over **300,000 Olympic records** across 130 years of competition.
+An enterprise-grade exploratory data analysis platform bridging **data engineering**, **statistical hypothesis testing**, and **business intelligence** to extract actionable insights from over **300,000 Olympic records** across Olympic editions from 1896 through Paris 2024, with 2026 preliminary roster records clearly separated.
 
 Developed by **Jakariya Khan** as a flagship portfolio project for **Data Analyst** interviews.
 
@@ -19,12 +19,12 @@ Most entry-level Olympic analyses perform simple `groupby` aggregations on raw r
 1. **The Team Medal Duplication Trap:**
    - In raw Olympic data, every member of a team sport squad (e.g., 12 basketball players or 4 relay runners) receives a row with a medal.
    - Summing rows directly inflates the USA's historical tally to **5,935 medals**.
-   - Implementing **event-level composite primary key deduplication** (`Year`, `Season`, `City`, `Sport`, `Event`, `Medal`, `NOC`) normalizes this to the official IOC count of **2,936 medals**, eliminating a **102.1% squad inflation error**.
+   - Applying **event-level deduplication** (`Year`, `Season`, `City`, `Sport`, `Event`, `Medal`, `NOC`) produces a country/event-level medal estimate that avoids counting every teammate as a separate team medal. Treat this as a dataset-derived aggregation, not an IOC-certified total.
 
-2. **Empirical Proof of the "Host Country Advantage":**
-   - Conducted a paired Student's t-test comparing historical host country medal yields against their non-host baselines.
-   - Result: **$t = 5.42, p < 0.0001$**, rejecting the null hypothesis with >99.9% statistical confidence.
-   - Host nations experience an average medal yield increase of **$+54.2\%$** during their host year.
+2. **Host-Nation Performance Comparison:**
+   - Compares each host nation's average medal count in editions it hosted with its average in other editions where it participated.
+   - Participating editions with zero medals are retained as zero rather than silently omitted; 2026 preliminary roster-only records are excluded.
+   - A paired t-test is calculated across host nations. The result is descriptive and observational, not proof that hosting causes medal gains; the dashboard calculates the statistic from the current dataset.
 
 3. **Title IX & The Trajectory of Gender Parity:**
    - Traced female athlete representation from **0.0% in 1896** to **1.9% in 1900**, stagnating under 15% until the 1970s.
@@ -44,7 +44,7 @@ Olympics_data_analysis/
 ├── data_loader.py                   # Data ingestion, schema reconciliation, deduplication & statistics
 ├── ui_utils.py                      # Reusable modern UI styling and CSS components
 ├── requirements.txt                 # Project dependencies
-├── olympics_cleaned_merged.csv      # Cleaned & consolidated fact dataset (300,266 records, 1896–2026)
+├── olympics_cleaned_merged.csv      # Cleaned & consolidated fact dataset (historical results through 2024; 2026 preliminary roster entries)
 ├── all_athlete_games.csv            # Original raw fact dataset
 ├── all_regions.csv                  # NOC to Region mapping dictionary
 │
@@ -63,11 +63,11 @@ Olympics_data_analysis/
 ## 🛠️ Data Engineering & ETL Pipeline
 
 * **Optimized Fact Table Ingestion:**
-  - Standardized pipeline to ingest `olympics_cleaned_merged.csv`, featuring pre-consolidated region joins, validated medal indicator flags, and schema-reconciled 2024–2026 data.
-* **Schema Reconciliation for 2024 & 2026:**
+  - Standardized pipeline to ingest `olympics_cleaned_merged.csv`, featuring pre-consolidated region joins, medal indicator flags, and schema reconciliation for modern source formats.
+* **Schema Reconciliation & Result-Status Handling:**
   - The 2024 Paris edition stored `Sport` and `Event` as stringified Python lists within `Sport Disciplines` and `Event List`.
   - Built a regex-driven extraction parser that unwrapped list literals into canonical event strings.
-  - Segregated the 2026 Milan-Cortina Winter Games athlete entry rosters.
+  - Labels 2026 Milan-Cortina records as preliminary roster entries when completed event results are absent; these records are excluded from the host-nation statistical comparison.
 * **Geopolitical Entity Resolution:**
   - Resolved historical and modern NOC discrepancies: `AIN` $\rightarrow$ *Individual Neutral Athletes*, `ROT`/`EOR` $\rightarrow$ *Refugee Olympic Team*, `TUV` $\rightarrow$ *Tuvalu*, `ROC` $\rightarrow$ *Russia*.
 * **Performance Optimization:**
