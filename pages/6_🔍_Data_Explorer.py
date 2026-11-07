@@ -23,6 +23,12 @@ ui.render_hero_banner(
 )
 
 # Filters Sidebar / Top Bar
+if 'Is_Preliminary_Entry' in df.columns and df['Is_Preliminary_Entry'].any():
+    st.info(
+        "2026 rows are preliminary roster entries in this dataset, not completed event results. "
+        "The record-status field is included in the table and CSV export so these rows remain identifiable."
+    )
+
 st.subheader("⚙️ Multi-Dimensional Cohort Filters")
 
 r1_c1, r1_c2, r1_c3 = st.columns(3)
@@ -159,7 +165,7 @@ if cohort_records > 0:
     st.markdown("---")
     st.subheader("📋 Granular Data Records")
     
-    cols_to_show = ['Year', 'Season', 'City', 'Name', 'Gender', 'Age', 'Region', 'NOC', 'Sport', 'Event', 'Medal']
+    cols_to_show = ['Year', 'Season', 'City', 'Name', 'Gender', 'Age', 'Region', 'NOC', 'Sport', 'Event', 'Medal', 'Record_Status']
     
     t_c1, t_c2 = st.columns([3, 1])
     with t_c1:
