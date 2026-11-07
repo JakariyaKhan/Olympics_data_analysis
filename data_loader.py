@@ -144,7 +144,7 @@ def load_olympic_data():
     # The source snapshot contains 2026 roster entries, not completed event results.
     # Keep these records available for exploration, but label them explicitly so
     # they are not silently treated as historical results in analytical summaries.
-    df['Is_Preliminary_Entry'] = (df['Year'] == 2026) & df['Medal'].isna()
+    df['Is_Preliminary_Entry'] = df['Year'] == 2026
     df['Record_Status'] = np.select(
         [df['Is_Preliminary_Entry'], df['Medal'].notna()],
         ['2026 roster entry — results not included in source data', 'Medal result'],
@@ -176,7 +176,10 @@ def get_deduplicated_medals(df):
     In team events (e.g. Basketball, Football, Relay), multiple teammates winning medals
     are counted as ONE medal for the country's official medal tally.
     """
-    medals_only = df[df['Medal'].notna()]
+    eligible = df
+    if 'Is_Preliminary_Entry' in eligible.columns:
+        eligible = eligible[~eligible['Is_Preliminary_Entry']]
+    medals_only = eligible[eligible['Medal'].notna()]
     dedup = medals_only.drop_duplicates(
         subset=['Year', 'Season', 'City', 'Sport', 'Event', 'Medal', 'NOC']
     )
@@ -195,6 +198,8 @@ def get_medal_tally(df, year='All-Time', season='All', deduplicate=True):
     if deduplicate:
         medals_data = get_deduplicated_medals(filtered)
     else:
+        if 'Is_Preliminary_Entry' in filtered.columns:
+            filtered = filtered[~filtered['Is_Preliminary_Entry']]
         medals_data = filtered[filtered['Medal'].notna()]
 
     # Group by Region
