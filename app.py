@@ -265,7 +265,7 @@ with st.expander("🔍 Click to view : Data Architecture, Schema Migration, and 
         
         **The Fix:**
         - Calculated each host nation's historical non-host mean vs. host year performance.
-        - Applied `scipy.stats.ttest_rel` (paired t-test) yielding $t = 5.42, p < 0.0001$.
+        - Applied `scipy.stats.ttest_rel` to paired host and non-host averages across host nations; the statistic is recalculated from the current dataset and should be interpreted as observational evidence, not causal proof.
         - Allows candidates to explain Type I error, p-values, and statistical power in technical interviews.
         """)
 
