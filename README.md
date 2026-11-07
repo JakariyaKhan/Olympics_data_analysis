@@ -18,7 +18,7 @@ Most entry-level Olympic analyses perform simple `groupby` aggregations on raw r
 
 1. **The Team Medal Duplication Trap:**
    - In raw Olympic data, every member of a team sport squad (e.g., 12 basketball players or 4 relay runners) receives a row with a medal.
-   - Summing rows directly inflates the USA's historical tally to **5,935 medals**.
+   - Summing athlete rows can substantially inflate team-event totals because every squad member may have an individual row for the same event medal.
    - Applying **event-level deduplication** (`Year`, `Season`, `City`, `Sport`, `Event`, `Medal`, `NOC`) produces a country/event-level medal estimate that avoids counting every teammate as a separate team medal. Treat this as a dataset-derived aggregation, not an IOC-certified total.
 
 2. **Host-Nation Performance Comparison:**
@@ -67,7 +67,7 @@ Olympics_data_analysis/
 * **Schema Reconciliation & Result-Status Handling:**
   - The 2024 Paris edition stored `Sport` and `Event` as stringified Python lists within `Sport Disciplines` and `Event List`.
   - Built a regex-driven extraction parser that unwrapped list literals into canonical event strings.
-  - Labels 2026 Milan-Cortina records as preliminary roster entries when completed event results are absent; these records are excluded from the host-nation statistical comparison.
+  - Labels all 2026 Milan-Cortina records in this source snapshot as preliminary roster entries, not completed event results. These rows are excluded from medal-result tallies and the host-nation statistical comparison.
 * **Geopolitical Entity Resolution:**
   - Resolved historical and modern NOC discrepancies: `AIN` $\rightarrow$ *Individual Neutral Athletes*, `ROT`/`EOR` $\rightarrow$ *Refugee Olympic Team*, `TUV` $\rightarrow$ *Tuvalu*, `ROC` $\rightarrow$ *Russia*.
 * **Performance Optimization:**
