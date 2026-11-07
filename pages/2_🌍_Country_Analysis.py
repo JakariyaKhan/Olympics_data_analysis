@@ -243,18 +243,27 @@ else:
         else:
             h1, h2, h3 = st.columns(3)
             avg_lift_all = host_summary['Lift_Pct'].mean()
-            h1.metric("Average Medal Lift When Hosting", f"+{avg_lift_all:.1f}%")
-            h2.metric("Paired t-statistic", f"{t_stat:.2f}" if not np.isnan(t_stat) else "N/A")
-            h3.metric("p-value", f"{p_val:.4e}" if not np.isnan(p_val) else "N/A", help="p < 0.05 indicates reject null hypothesis with high confidence")
+            h1.metric("Mean Host-Nation Lift", f"{avg_lift_all:+.1f}%" if np.isfinite(avg_lift_all) else "N/A")
+            h2.metric("Paired t-statistic", f"{t_stat:.2f}" if np.isfinite(t_stat) else "N/A")
+            h3.metric("p-value", f"{p_val:.4e}" if np.isfinite(p_val) else "N/A", help="A small p-value indicates evidence of a difference in paired host and non-host country averages; it does not prove causation.")
+
+            st.info(
+                "Method: each host nation's average medal count in editions it hosted is "
+                "compared with its average in other editions where it participated. "
+                "Participating zero-medal editions are included; roster-only 2026 entries "
+                "are excluded. The paired t-test uses one pair per host nation, so results "
+                "are descriptive and should not be interpreted as causal proof."
+            )
 
             st.markdown("<br>", unsafe_allow_html=True)
             st.dataframe(
-                host_summary[['Region', 'Host_Editions_Count', 'Avg_Medals_When_Host', 'Avg_Medals_Non_Host', 'Abs_Lift', 'Lift_Pct']],
+                host_summary[['Region', 'Host_Editions_Count', 'Non_Host_Editions_Count', 'Avg_Medals_When_Host', 'Avg_Medals_Non_Host', 'Abs_Lift', 'Lift_Pct']],
                 use_container_width=True,
                 hide_index=True,
                 column_config={
                     "Region": "Host Nation",
-                    "Host_Editions_Count": "Games Hosted",
+                    "Host_Editions_Count": "Participated Host Editions",
+                    "Non_Host_Editions_Count": "Participated Non-Host Editions",
                     "Avg_Medals_When_Host": st.column_config.NumberColumn("Avg Medals (Host)", format="%.1f"),
                     "Avg_Medals_Non_Host": st.column_config.NumberColumn("Avg Medals (Away)", format="%.1f"),
                     "Abs_Lift": st.column_config.NumberColumn("Absolute Lift", format="%.1f"),
@@ -262,11 +271,11 @@ else:
                 }
             )
 
-            p_val_str = f"{p_val:.4e}" if not np.isnan(p_val) else "< 0.001"
-            t_stat_str = f"{t_stat:.2f}" if not np.isnan(t_stat) else "N/A"
+            p_val_str = f"{p_val:.4e}" if np.isfinite(p_val) else "not available"
+            t_stat_str = f"{t_stat:.2f}" if np.isfinite(t_stat) else "not available"
             ui.render_insight_card(
-                title="Statistical Validation for Data Analyst Interviews",
-                text=f"A paired Student's t-test comparing historical host country medal yields against their non-host baseline yields a t-statistic of {t_stat_str} and a p-value of {p_val_str} (p < 0.001). We reject the null hypothesis at the 99.9% confidence interval. Factors driving this effect include home crowd morale, automatic event qualification, familiarity with climate and venues, and long-term national sports funding leading up to the bid."
+                title="How to Interpret the Host-Nation Comparison",
+                text=f"The paired comparison across {len(host_summary)} host nations gives t = {t_stat_str} and p = {p_val_str}. Each pair compares a nation's average medal count in its host editions with its average in non-host editions where it participated. Zero-medal participations are retained. This is an observational comparison: it identifies an association, not proof that hosting caused a medal increase."
             )
 
     # TAB 4: Head-to-Head Comparison
